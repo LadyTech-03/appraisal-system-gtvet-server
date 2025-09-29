@@ -28,6 +28,9 @@ router.get('/team',
 // Get appraisal statistics (admin only)
 router.get('/statistics', requireManager, AppraisalController.getAppraisalStatistics);
 
+// Get dashboard overview for current user
+router.get('/overview/me', AppraisalController.getDashboardOverview);
+
 // Export appraisals
 router.get('/export', requireManager, AppraisalController.bulkExportAppraisals);
 

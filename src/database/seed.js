@@ -79,22 +79,18 @@ const seedAdminUser = async () => {
       name,
       role,
       division,
-      unit,
       position,
-      grade,
       is_active
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     ON CONFLICT (employee_id) DO NOTHING
   `, [
     'ADMIN001',
     adminEmail,
     hashedPassword,
+    'Cynthia Baidoo',
     'System Administrator',
-    'Director-General',
     'Administration',
-    'IT Unit',
     'System Administrator',
-    'Grade 20',
     true
   ]);
   

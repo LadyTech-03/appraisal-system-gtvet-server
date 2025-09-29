@@ -1,6 +1,7 @@
 const Appraisal = require('../models/Appraisal');
 const User = require('../models/User');
 const { AppError } = require('../middleware/errorHandler');
+const { query } = require('../config/database');
 
 class AppraisalService {
   // Get all appraisals with filters
@@ -185,8 +186,6 @@ class AppraisalService {
   // Get appraisal statistics
   static async getAppraisalStatistics() {
     try {
-      const { query } = require('../config/database');
-      
       // Get total appraisals
       const totalAppraisalsResult = await query('SELECT COUNT(*) FROM appraisals');
       const totalAppraisals = parseInt(totalAppraisalsResult.rows[0].count);
@@ -234,6 +233,76 @@ class AppraisalService {
         appraisalsByStatus: appraisalsByStatusResult.rows,
         appraisalsByPeriod: appraisalsByPeriodResult.rows,
         averageScores: averageScoresResult.rows[0]
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  
+  static async getDashboardOverview(user) {
+    try {
+      const userId = user.id;
+      const isAdmin = ['Director-General', 'System Administrator'].includes(user.role);
+
+      const statusCountsResult = await query(`
+        SELECT status, COUNT(*)::int AS count
+        FROM appraisals
+        WHERE employee_id = $1 OR appraiser_id = $1
+        GROUP BY status
+      `, [userId]);
+
+      const statusCounts = statusCountsResult.rows.reduce((acc, row) => {
+        acc[row.status] = row.count;
+        return acc;
+      }, { draft: 0, submitted: 0, reviewed: 0, closed: 0 });
+
+      const myAppraisalsCountResult = await query(`
+        SELECT COUNT(*)::int AS count
+        FROM appraisals
+        WHERE employee_id = $1
+      `, [userId]);
+
+      const averageRatingResult = await query(`
+        SELECT AVG((overall_assessment->>'overallRating')::numeric) AS avg_rating
+        FROM appraisals
+        WHERE employee_id = $1 AND overall_assessment IS NOT NULL
+      `, [userId]);
+
+      const averageRating = parseFloat(averageRatingResult.rows[0].avg_rating) || 0;
+
+      const recentAppraisalsResult = await query(`
+        SELECT a.*, 
+               e.name as employee_name, e.employee_id as employee_employee_id,
+               ap.name as appraiser_name, ap.employee_id as appraiser_employee_id
+        FROM appraisals a
+        LEFT JOIN users e ON a.employee_id = e.id
+        LEFT JOIN users ap ON a.appraiser_id = ap.id
+        WHERE a.employee_id = $1 OR a.appraiser_id = $1
+        ORDER BY a.updated_at DESC
+        LIMIT 5
+      `, [userId]);
+
+      const recentAppraisals = recentAppraisalsResult.rows.map(row => new Appraisal(row).toJSON());
+
+      const teamMembers = await User.findByManagerId(userId);
+      const teamMembersCount = teamMembers.length;
+
+      let totalUsers = null;
+      if (isAdmin) {
+        const totalUsersResult = await query('SELECT COUNT(*)::int AS count FROM users WHERE is_active = true');
+        totalUsers = totalUsersResult.rows[0].count;
+      }
+
+      return {
+        myAppraisals: myAppraisalsCountResult.rows[0].count,
+        pendingAppraisals: statusCounts.draft || 0,
+        completedAppraisals: statusCounts.closed || 0,
+        inReviewAppraisals: statusCounts.reviewed || 0,
+        submittedAppraisals: statusCounts.submitted || 0,
+        averageRating,
+        teamMembers: teamMembersCount,
+        totalUsers,
+        recentAppraisals,
       };
     } catch (error) {
       throw error;

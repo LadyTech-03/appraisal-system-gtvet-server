@@ -64,11 +64,11 @@ const requireRole = (roles) => {
 };
 
 // Middleware to check if user is admin
-const requireAdmin = requireRole(['Director-General', 'Deputy Director-General']);
+const requireAdmin = requireRole(['Director-General', 'System Administrator']);
 
 // Middleware to check if user is manager or admin
 const requireManager = requireRole([
-  'Director-General', 'Deputy Director-General', 'Director', 
+  'Director-General', 'System Administrator', 'Deputy Director-General', 
   'Deputy Director', 'Principal', 'Vice Principal', 'Head of Department'
 ]);
 
@@ -98,6 +98,7 @@ const canAccessAppraisal = async (req, res, next) => {
       req.user.id === appraisal.employeeId || // Employee
       req.user.id === appraisal.appraiserId || // Appraiser
       req.user.role === 'Director-General' || // Admin
+      req.user.role === 'System Administrator' || // Admin
       req.user.role === 'Deputy Director-General' || // Admin
       req.user.role === 'Director' || // Admin
       req.user.role === 'Deputy Director' || // Admin
@@ -147,6 +148,7 @@ const canManageUser = async (req, res, next) => {
     const canManage = 
       req.user.id === targetUserId || // Self
       req.user.role === 'Director-General' || // Admin
+      req.user.role === 'System Administrator' || // Admin
       req.user.role === 'Deputy Director-General' || // Admin
       req.user.role === 'Director' || // Admin
       req.user.role === 'Deputy Director' || // Admin
@@ -211,6 +213,7 @@ const canAccessTeam = async (req, res, next) => {
     // Check if user can access team data
     const canAccess = 
       req.user.role === 'Director-General' || // Admin
+      req.user.role === 'System Administrator' || // Admin
       req.user.role === 'Deputy Director-General' || // Admin
       req.user.role === 'Director' || // Admin
       req.user.role === 'Deputy Director' || // Admin

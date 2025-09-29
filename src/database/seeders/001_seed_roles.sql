@@ -1,7 +1,7 @@
--- Insert default roles and permissions
--- This is handled in the application code, but keeping for reference
+-- Insert default roles
 
 -- Note: Roles are managed in the application code as constants
+
 -- The following roles are available:
 
 -- - DIVISIONS

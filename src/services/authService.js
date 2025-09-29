@@ -211,17 +211,8 @@ class AuthService {
       // Define role-based permissions
       const permissions = {
         'Director-General': ['*'], // All permissions
-        'Deputy Director-General': ['*'], // All permissions
-        'Director': ['*'], // All permissions
-        'Deputy Director': ['*'], // All permissions
-        'Principal': ['*'], // All permissions
-        'Vice Principal': ['*'], // All permissions
-        'Head of Department': ['manage_team', 'view_team', 'create_appraisal', 'review_appraisal'],
-        'Senior Lecturer': ['view_team', 'create_appraisal', 'review_appraisal'],
-        'Lecturer': ['view_own', 'create_appraisal'],
-        'Assistant Lecturer': ['view_own', 'create_appraisal'],
-        'Administrative Staff': ['view_all', 'manage_users'],
-        'Support Staff': ['view_own']
+        'System Administrator': ['*'], // All permissions
+        // Add other roles and permissions here
       };
       
       const userPermissions = permissions[user.role] || [];

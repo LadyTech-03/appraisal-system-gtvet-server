@@ -157,6 +157,15 @@ class AppraisalController {
     });
   });
   
+  static getDashboardOverview = catchAsync(async (req, res) => {
+    const overview = await AppraisalService.getDashboardOverview(req.user);
+
+    res.status(200).json({
+      success: true,
+      data: overview
+    });
+  });
+  
   // Get team appraisals
   static getTeamAppraisals = catchAsync(async (req, res) => {
     const managerId = req.user.id;
