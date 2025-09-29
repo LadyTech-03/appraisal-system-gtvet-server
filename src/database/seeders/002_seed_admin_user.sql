@@ -1,0 +1,3 @@
+-- Insert default admin user
+-- Password will be hashed from environment variable ADMIN_PASSWORD
+-- This is now handled in the seed.js file using bcrypt
