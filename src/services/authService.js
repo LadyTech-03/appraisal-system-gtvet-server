@@ -131,7 +131,6 @@ class AuthService {
   static async getProfile(userId) {
     try {
       const user = await User.findById(userId);
-      
       if (!user) {
         throw new AppError('User not found', 404);
       }

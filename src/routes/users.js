@@ -2,21 +2,22 @@ const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/userController');
 const { validate, userSchemas, querySchemas } = require('../middleware/validation');
-const { 
-  authenticateToken, 
-  requireAdmin, 
-  requireManager, 
+const {
+  authenticateToken,
+  requireAdmin,
+  requireManager,
   canManageUser,
-  canAccessTeam 
+  canAccessTeam
 } = require('../middleware/auth');
+const { uploadSignatureMiddleware } = require('../middleware/upload');
 
 // All routes require authentication
 router.use(authenticateToken);
 
 // Get all users (admin/manager only)
-router.get('/', 
-  requireManager, 
-  validate(querySchemas.userFilters, 'query'), 
+router.get('/',
+  requireManager,
+  validate(querySchemas.userFilters, 'query'),
   UserController.getUsers
 );
 
@@ -24,16 +25,16 @@ router.get('/',
 router.get('/statistics', requireAdmin, UserController.getUserStatistics);
 
 // Search users
-router.get('/search', 
-  requireManager, 
-  validate(querySchemas.userFilters, 'query'), 
+router.get('/search',
+  requireManager,
+  validate(querySchemas.userFilters, 'query'),
   UserController.searchUsers
 );
 
 // Get users by role
-router.get('/role/:role', 
-  requireManager, 
-  validate(querySchemas.userFilters, 'query'), 
+router.get('/role/:role',
+  requireManager,
+  validate(querySchemas.userFilters, 'query'),
   UserController.getUsersByRole
 );
 
@@ -42,16 +43,16 @@ router.get('/roles', requireAdmin, UserController.getRoles);
 
 
 // Get users by division
-router.get('/division/:division', 
-  requireManager, 
-  validate(querySchemas.userFilters, 'query'), 
+router.get('/division/:division',
+  requireManager,
+  validate(querySchemas.userFilters, 'query'),
   UserController.getUsersByDivision
 );
 
 // Get users by unit
-router.get('/unit/:unit', 
-  requireManager, 
-  validate(querySchemas.userFilters, 'query'), 
+router.get('/unit/:unit',
+  requireManager,
+  validate(querySchemas.userFilters, 'query'),
   UserController.getUsersByUnit
 );
 
@@ -71,14 +72,20 @@ router.get('/:id/team', canAccessTeam, UserController.getUserTeam);
 router.get('/:id/hierarchy', canManageUser, UserController.getUserHierarchy);
 
 // Create new user (admin only)
-router.post('/', 
-  requireAdmin, 
-  validate(userSchemas.create), 
+router.post('/',
+  requireAdmin,
+  validate(userSchemas.create),
   UserController.createUser
 );
 
 // Update user
 router.put('/:id', canManageUser, validate(userSchemas.update), UserController.updateUser);
+
+// Upload signature
+router.post('/signature',
+  uploadSignatureMiddleware('signature'),
+  UserController.uploadSignature
+);
 
 // Delete user (admin only)
 router.delete('/:id', requireAdmin, UserController.deleteUser);

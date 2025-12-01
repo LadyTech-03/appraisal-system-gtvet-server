@@ -16,6 +16,7 @@ class User {
     this.managerId = data.manager_id;
     this.phone = data.phone;
     this.avatarUrl = data.avatar_url;
+    this.signatureUrl = data.signature_url;
     this.isActive = data.is_active;
     this.lastLogin = data.last_login;
     this.createdAt = data.created_at;
@@ -169,8 +170,8 @@ class User {
   // Update user
   async update(updateData) {
     const allowedFields = [
-      'employee_id', 'email', 'name', 'role', 'division', 'unit', 
-      'position', 'grade', 'manager_id', 'phone', 'avatar_url', 'is_active'
+      'employee_id', 'email', 'name', 'role', 'division', 'unit',
+      'position', 'grade', 'manager_id', 'phone', 'avatar_url', 'signature_url', 'is_active'
     ];
 
     const updates = [];
@@ -208,7 +209,7 @@ class User {
   // Update password
   async updatePassword(newPassword) {
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    
+
     const result = await query(`
       UPDATE users 
       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
@@ -265,6 +266,7 @@ class User {
       managerId: this.managerId,
       phone: this.phone,
       avatarUrl: this.avatarUrl,
+      signatureUrl: this.signatureUrl,
       isActive: this.isActive,
       lastLogin: this.lastLogin,
       createdAt: this.createdAt,
@@ -285,7 +287,8 @@ class User {
       position: this.position,
       grade: this.grade,
       managerId: this.managerId,
-      avatarUrl: this.avatarUrl
+      avatarUrl: this.avatarUrl,
+      signatureUrl: this.signatureUrl
     };
   }
 }

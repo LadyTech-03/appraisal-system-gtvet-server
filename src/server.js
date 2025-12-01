@@ -17,6 +17,9 @@ const userRoutes = require('./routes/users');
 const appraisalRoutes = require('./routes/appraisals');
 const reviewRoutes = require('./routes/reviews');
 const adminRoutes = require('./routes/admin');
+const personalInfoRoutes = require('./routes/personalInfo');
+const performancePlanningRoutes = require('./routes/performancePlanning');
+const midYearReviewRoutes = require('./routes/midYearReview');
 
 // Import utilities
 const logger = require('./utils/logger');
@@ -35,7 +38,11 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:5000:"],
+      connectSrc: [
+        "'self'",
+        "http://localhost:5000",
+      ],
     },
   },
 }));
@@ -45,14 +52,14 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
       'https://tvet-appraisal.vercel.app',
       process.env.CLIENT_URL
     ].filter(Boolean);
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -117,7 +124,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/health', async (req, res) => {
   try {
     const dbStatus = await testConnection();
-    
+
     res.status(200).json({
       success: true,
       message: 'Server is healthy',
@@ -143,6 +150,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/appraisals', appraisalRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/personal-info', personalInfoRoutes);
+app.use('/api/performance-planning', performancePlanningRoutes);
+app.use('/api/mid-year-review', midYearReviewRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -167,17 +177,17 @@ app.use(globalErrorHandler);
 // Graceful shutdown
 const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
-  
+
   server.close((err) => {
     if (err) {
       logger.error('Error during server shutdown:', err);
       process.exit(1);
     }
-    
+
     logger.info('Server closed successfully');
     process.exit(0);
   });
-  
+
   // Force close after 10 seconds
   setTimeout(() => {
     logger.error('Forced shutdown after timeout');
