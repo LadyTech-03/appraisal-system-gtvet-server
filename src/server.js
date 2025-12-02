@@ -20,6 +20,9 @@ const adminRoutes = require('./routes/admin');
 const personalInfoRoutes = require('./routes/personalInfo');
 const performancePlanningRoutes = require('./routes/performancePlanning');
 const midYearReviewRoutes = require('./routes/midYearReview');
+const endYearReviewRoutes = require('./routes/endYearReview');
+const annualAppraisalRoutes = require('./routes/annualAppraisal');
+const finalSectionsRoutes = require('./routes/finalSections');
 
 // Import utilities
 const logger = require('./utils/logger');
@@ -38,13 +41,14 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:", "http://localhost:5000:"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:5000"],
       connectSrc: [
         "'self'",
         "http://localhost:5000",
       ],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
 // CORS configuration
@@ -153,6 +157,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/personal-info', personalInfoRoutes);
 app.use('/api/performance-planning', performancePlanningRoutes);
 app.use('/api/mid-year-review', midYearReviewRoutes);
+app.use('/api/end-year-review', endYearReviewRoutes);
+app.use('/api/annual-appraisal', annualAppraisalRoutes);
+app.use('/api/final-sections', finalSectionsRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
