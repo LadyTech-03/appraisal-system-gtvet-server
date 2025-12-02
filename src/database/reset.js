@@ -7,16 +7,21 @@ const dropTables = async () => {
     
     const tables = [
       'access_requests',
+      'annual_appraisal',
       'signatures',
       'competencies',
-      'end_year_reviews',
-      'mid_year_reviews',
+      'personal_info',
+      'performance_planning',
+      'mid_year_review',
+      'end_year_review',
       'key_result_areas',
       'training_records',
       'appraisals',
       'users',
       'migrations',
-      'seeders'
+      'seeders',
+      'final_sections',
+      'training_records'
     ];
     
     for (const table of tables) {
