@@ -3,19 +3,20 @@ const { NotFoundError, ValidationError } = require('../middleware/errorHandler')
 
 class PerformancePlanningService {
     static async createPerformancePlanning(userId, data) {
-        const { keyResultAreas, appraiseeSignatureUrl } = data;
+        const { keyResultAreas, appraiseeSignatureUrl, appraiserSignatureUrl } = data;
 
         const query = `
       INSERT INTO performance_planning (
-        user_id, key_result_areas, appraisee_signature_url
-      ) VALUES ($1, $2, $3)
+        user_id, key_result_areas, appraisee_signature_url, appraiser_signature_url
+      ) VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
         const values = [
             userId,
             JSON.stringify(keyResultAreas),
-            appraiseeSignatureUrl
+            appraiseeSignatureUrl,
+            appraiserSignatureUrl
         ];
 
         const result = await pool.query(query, values);
@@ -23,7 +24,7 @@ class PerformancePlanningService {
     }
 
     static async updatePerformancePlanning(id, data) {
-        const { keyResultAreas, appraiseeSignatureUrl } = data;
+        const { keyResultAreas, appraiseeSignatureUrl, appraiserSignatureUrl } = data;
 
         // Build dynamic update query
         const updates = [];
@@ -39,6 +40,12 @@ class PerformancePlanningService {
         if (appraiseeSignatureUrl !== undefined) {
             updates.push(`appraisee_signature_url = $${paramCount}`);
             values.push(appraiseeSignatureUrl);
+            paramCount++;
+        }
+
+        if (appraiserSignatureUrl !== undefined) {
+            updates.push(`appraiser_signature_url = $${paramCount}`);
+            values.push(appraiserSignatureUrl);
             paramCount++;
         }
 

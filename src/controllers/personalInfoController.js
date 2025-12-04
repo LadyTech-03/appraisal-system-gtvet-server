@@ -91,6 +91,20 @@ class PersonalInfoController {
     });
 
     /**
+     * Get team appraisals (for managers)
+     */
+    static getTeamAppraisals = catchAsync(async (req, res) => {
+        const managerId = req.user.id;
+
+        const personalInfo = await PersonalInfoService.getPersonalInfoByManagerId(managerId);
+
+        res.status(200).json({
+            success: true,
+            data: personalInfo
+        });
+    });
+
+    /**
      * Delete personal info
      */
     static deletePersonalInfo = catchAsync(async (req, res) => {

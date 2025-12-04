@@ -3,12 +3,12 @@ const { NotFoundError, ValidationError } = require('../middleware/errorHandler')
 
 class MidYearReviewService {
     static async createMidYearReview(userId, data) {
-        const { targets, competencies, appraiseeSignatureUrl, appraiseeDate } = data;
+        const { targets, competencies, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
         const query = `
       INSERT INTO mid_year_review (
-        user_id, targets, competencies, appraisee_signature_url, appraisee_date
-      ) VALUES ($1, $2, $3, $4, $5)
+        user_id, targets, competencies, appraisee_signature_url, appraisee_date, appraiser_signature_url, appraiser_date
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
 
@@ -17,7 +17,9 @@ class MidYearReviewService {
             JSON.stringify(targets),
             JSON.stringify(competencies),
             appraiseeSignatureUrl,
-            appraiseeDate
+            appraiseeDate,
+            appraiserSignatureUrl,
+            appraiserDate
         ];
 
         const result = await pool.query(query, values);
@@ -25,7 +27,7 @@ class MidYearReviewService {
     }
 
     static async updateMidYearReview(id, data) {
-        const { targets, competencies, appraiseeSignatureUrl, appraiseeDate } = data;
+        const { targets, competencies, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
         // Build dynamic update query
         const updates = [];
@@ -50,9 +52,21 @@ class MidYearReviewService {
             paramCount++;
         }
 
+        if (appraiserSignatureUrl !== undefined) {
+            updates.push(`appraiser_signature_url = $${paramCount}`);
+            values.push(appraiserSignatureUrl);
+            paramCount++;
+        }
+
         if (appraiseeDate !== undefined) {
             updates.push(`appraisee_date = $${paramCount}`);
             values.push(appraiseeDate);
+            paramCount++;
+        }
+
+        if (appraiserDate !== undefined) {
+            updates.push(`appraiser_date = $${paramCount}`);
+            values.push(appraiserDate);
             paramCount++;
         }
 

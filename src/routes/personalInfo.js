@@ -9,6 +9,9 @@ router.use(authenticateToken);
 // Get current user's personal info
 router.get('/me', PersonalInfoController.getMyPersonalInfo);
 
+// Get team appraisals (for managers)
+router.get('/team', PersonalInfoController.getTeamAppraisals);
+
 // Get all personal info (admin only)
 router.get('/', requireManager, PersonalInfoController.getAllPersonalInfo);
 

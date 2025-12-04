@@ -19,7 +19,14 @@ class PersonalInfoService {
             gradeSalary,
             division,
             dateOfAppointment,
-            trainingRecords = []
+            trainingRecords = [],
+            // Appraiser fields (nullable)
+            appraiserTitle,
+            appraiserOtherTitle,
+            appraiserSurname,
+            appraiserFirstName,
+            appraiserOtherNames,
+            appraiserPosition
         } = personalInfoData;
 
         // Validate required fields
@@ -28,17 +35,25 @@ class PersonalInfoService {
             throw new ValidationError('Missing required fields');
         }
 
+        // Get user's manager_id from users table
+        const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
+        const userResult = await pool.query(userQuery, [userId]);
+        const managerId = userResult.rows[0]?.manager_id || null;
+
         const query = `
       INSERT INTO personal_info (
-        user_id, period_from, period_to, title, other_title, surname, 
+        user_id, manager_id, period_from, period_to, title, other_title, surname, 
         first_name, other_names, gender, present_job_title, grade_salary, 
-        division, date_of_appointment, training_records
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        division, date_of_appointment, training_records,
+        appraiser_title, appraiser_other_title, appraiser_surname, appraiser_first_name,
+        appraiser_other_names, appraiser_position
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *
     `;
 
         const values = [
             userId,
+            managerId,
             periodFrom,
             periodTo,
             title,
@@ -51,7 +66,13 @@ class PersonalInfoService {
             gradeSalary,
             division,
             dateOfAppointment,
-            JSON.stringify(trainingRecords)
+            JSON.stringify(trainingRecords),
+            appraiserTitle || null,
+            appraiserOtherTitle || null,
+            appraiserSurname || null,
+            appraiserFirstName || null,
+            appraiserOtherNames || null,
+            appraiserPosition || null
         ];
 
         const result = await pool.query(query, values);
@@ -75,7 +96,14 @@ class PersonalInfoService {
             gradeSalary,
             division,
             dateOfAppointment,
-            trainingRecords
+            trainingRecords,
+            // Appraiser fields (nullable)
+            appraiserTitle,
+            appraiserOtherTitle,
+            appraiserSurname,
+            appraiserFirstName,
+            appraiserOtherNames,
+            appraiserPosition
         } = personalInfoData;
 
         const query = `
@@ -94,8 +122,14 @@ class PersonalInfoService {
         division = COALESCE($11, division),
         date_of_appointment = COALESCE($12, date_of_appointment),
         training_records = COALESCE($13, training_records),
+        appraiser_title = COALESCE($14, appraiser_title),
+        appraiser_other_title = COALESCE($15, appraiser_other_title),
+        appraiser_surname = COALESCE($16, appraiser_surname),
+        appraiser_first_name = COALESCE($17, appraiser_first_name),
+        appraiser_other_names = COALESCE($18, appraiser_other_names),
+        appraiser_position = COALESCE($19, appraiser_position),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $14
+      WHERE id = $20
       RETURNING *
     `;
 
@@ -113,6 +147,12 @@ class PersonalInfoService {
             division,
             dateOfAppointment,
             trainingRecords ? JSON.stringify(trainingRecords) : null,
+            appraiserTitle,
+            appraiserOtherTitle,
+            appraiserSurname,
+            appraiserFirstName,
+            appraiserOtherNames,
+            appraiserPosition,
             id
         ];
 
@@ -149,6 +189,21 @@ class PersonalInfoService {
       ORDER BY created_at DESC
     `;
         const result = await pool.query(query, [userId]);
+        return result.rows;
+    }
+
+    /**
+     * Get personal info by manager ID (for team appraisals)
+     */
+    static async getPersonalInfoByManagerId(managerId) {
+        const query = `
+      SELECT pi.*, u.name as user_name, u.email as user_email, u.employee_id
+      FROM personal_info pi
+      JOIN users u ON pi.user_id = u.id
+      WHERE pi.manager_id = $1 
+      ORDER BY pi.created_at DESC
+    `;
+        const result = await pool.query(query, [managerId]);
         return result.rows;
     }
 
