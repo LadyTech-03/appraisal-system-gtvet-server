@@ -16,10 +16,10 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify token
     const decoded = verifyToken(token);
-    
+
     // Get user from database
     const user = await User.findById(decoded.id);
-    
+
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
@@ -68,7 +68,7 @@ const requireAdmin = requireRole(['Director-General', 'System Administrator']);
 
 // Middleware to check if user is manager or admin
 const requireManager = requireRole([
-  'Director-General', 'System Administrator', 'Deputy Director-General', 
+  'Director-General', 'System Administrator', 'Deputy Director-General',
   'Deputy Director', 'Principal', 'Vice Principal', 'Head of Department'
 ]);
 
@@ -94,7 +94,7 @@ const canAccessAppraisal = async (req, res, next) => {
     }
 
     // Check if user can access this appraisal
-    const canAccess = 
+    const canAccess =
       req.user.id === appraisal.employeeId || // Employee
       req.user.id === appraisal.appraiserId || // Appraiser
       req.user.role === 'Director-General' || // Admin
@@ -145,7 +145,7 @@ const canManageUser = async (req, res, next) => {
     }
 
     // Check if user can manage this user
-    const canManage = 
+    const canManage =
       req.user.id === targetUserId || // Self
       req.user.role === 'Director-General' || // Admin
       req.user.role === 'System Administrator' || // Admin
@@ -185,7 +185,7 @@ const requireOwnership = (req, res, next) => {
   }
 
   const targetUserId = req.params.id || req.params.userId;
-  
+
   if (req.user.id !== targetUserId) {
     return res.status(403).json({
       success: false,
@@ -211,7 +211,7 @@ const canAccessTeam = async (req, res, next) => {
     const subordinateIds = subordinates.map(sub => sub.id);
 
     // Check if user can access team data
-    const canAccess = 
+    const canAccess =
       req.user.role === 'Director-General' || // Admin
       req.user.role === 'System Administrator' || // Admin
       req.user.role === 'Deputy Director-General' || // Admin
@@ -240,6 +240,57 @@ const canAccessTeam = async (req, res, next) => {
   }
 };
 
+// Middleware to check if user can manage (complete/approve/reject) an appraisal
+const canManageAppraisal = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    const appraisalId = req.params.id;
+    const pool = require('../config/database');
+
+    // Get appraisal details
+    const query = 'SELECT id, employee_id, appraiser_id FROM appraisals WHERE id = $1';
+    const result = await pool.query(query, [appraisalId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appraisal not found'
+      });
+    }
+
+    const appraisal = result.rows[0];
+
+    // Check if user is the appraiser or an admin
+    const canManage =
+      req.user.id === appraisal.appraiser_id || // Direct appraiser/manager
+      req.user.role === 'Director-General' ||
+      req.user.role === 'System Administrator' ||
+      req.user.role === 'Deputy Director-General';
+
+    if (!canManage) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions'
+      });
+    }
+
+    req.appraisal = appraisal;
+    next();
+  } catch (error) {
+    console.error('Appraisal management access check error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   authenticateToken,
   requireRole,
@@ -248,5 +299,6 @@ module.exports = {
   canAccessAppraisal,
   canManageUser,
   requireOwnership,
-  canAccessTeam
+  canAccessTeam,
+  canManageAppraisal
 };

@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { NotFoundError, ValidationError } = require('../middleware/errorHandler');
+const AppraisalService = require('./appraisalService');
 
 class AnnualAppraisalService {
     static async createAnnualAppraisal(userId, data) {
@@ -11,22 +12,34 @@ class AnnualAppraisalService {
             nonCoreCompetenciesAverage,
             overallTotal,
             overallScorePercentage,
-            appraiseeSignatureUrl,
-            appraiseeDate
+            appraiserSignatureUrl,
+            appraiserDate
         } = data;
+
+        // Get user's manager_id from users table
+        const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
+        const userResult = await pool.query(userQuery, [userId]);
+        const managerId = userResult.rows[0]?.manager_id || null;
+
+        // Get appraisal_id from personal_info
+        const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
+        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
 
         const query = `
       INSERT INTO annual_appraisal (
-        user_id, core_competencies, non_core_competencies,
+        user_id, manager_id, appraisal_id, core_competencies, non_core_competencies,
         performance_assessment_score, core_competencies_average,
         non_core_competencies_average, overall_total, overall_score_percentage,
-        appraisee_signature_url, appraisee_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        appraiser_signature_url, appraiser_date
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
 
         const values = [
             userId,
+            managerId,
+            appraisalId,
             JSON.stringify(coreCompetencies),
             JSON.stringify(nonCoreCompetencies),
             performanceAssessmentScore,
@@ -34,12 +47,29 @@ class AnnualAppraisalService {
             nonCoreCompetenciesAverage,
             overallTotal,
             overallScorePercentage,
-            appraiseeSignatureUrl,
-            appraiseeDate
+            appraiserSignatureUrl,
+            appraiserDate,
         ];
 
         const result = await pool.query(query, values);
-        return result.rows[0];
+        const annualAppraisal = result.rows[0];
+
+        // Update appraisal table
+        if (appraisalId) {
+            await AppraisalService.updateAppraisalSection(appraisalId, 'annual_appraisal', {
+                coreCompetencies,
+                nonCoreCompetencies,
+                overallAssessment: {
+                    performance_assessment_score: performanceAssessmentScore,
+                    core_competencies_average: coreCompetenciesAverage,
+                    non_core_competencies_average: nonCoreCompetenciesAverage,
+                    overall_total: overallTotal,
+                    overall_score_percentage: overallScorePercentage
+                }
+            });
+        }
+
+        return annualAppraisal;
     }
 
     static async updateAnnualAppraisal(id, data) {
@@ -51,8 +81,8 @@ class AnnualAppraisalService {
             nonCoreCompetenciesAverage,
             overallTotal,
             overallScorePercentage,
-            appraiseeSignatureUrl,
-            appraiseeDate
+            appraiserSignatureUrl,
+            appraiserDate,
         } = data;
 
         // Build dynamic update query
@@ -102,15 +132,15 @@ class AnnualAppraisalService {
             paramCount++;
         }
 
-        if (appraiseeSignatureUrl !== undefined) {
-            updates.push(`appraisee_signature_url = $${paramCount}`);
-            values.push(appraiseeSignatureUrl);
+        if (appraiserSignatureUrl !== undefined) {
+            updates.push(`appraiser_signature_url = $${paramCount}`);
+            values.push(appraiserSignatureUrl);
             paramCount++;
         }
 
-        if (appraiseeDate !== undefined) {
-            updates.push(`appraisee_date = $${paramCount}`);
-            values.push(appraiseeDate);
+        if (appraiserDate !== undefined) {
+            updates.push(`appraiser_date = $${paramCount}`);
+            values.push(appraiserDate);
             paramCount++;
         }
 
@@ -134,7 +164,24 @@ class AnnualAppraisalService {
             throw new NotFoundError('Annual appraisal record not found');
         }
 
-        return result.rows[0];
+        const annualAppraisal = result.rows[0];
+
+        // Update appraisal table
+        if (annualAppraisal.appraisal_id) {
+            await AppraisalService.updateAppraisalSection(annualAppraisal.appraisal_id, 'annual_appraisal', {
+                coreCompetencies: coreCompetencies || annualAppraisal.core_competencies,
+                nonCoreCompetencies: nonCoreCompetencies || annualAppraisal.non_core_competencies,
+                overallAssessment: {
+                    performance_assessment_score: performanceAssessmentScore !== undefined ? performanceAssessmentScore : annualAppraisal.performance_assessment_score,
+                    core_competencies_average: coreCompetenciesAverage !== undefined ? coreCompetenciesAverage : annualAppraisal.core_competencies_average,
+                    non_core_competencies_average: nonCoreCompetenciesAverage !== undefined ? nonCoreCompetenciesAverage : annualAppraisal.non_core_competencies_average,
+                    overall_total: overallTotal !== undefined ? overallTotal : annualAppraisal.overall_total,
+                    overall_score_percentage: overallScorePercentage !== undefined ? overallScorePercentage : annualAppraisal.overall_score_percentage
+                }
+            });
+        }
+
+        return annualAppraisal;
     }
 
     static async getAnnualAppraisalById(id) {
@@ -150,6 +197,12 @@ class AnnualAppraisalService {
 
     static async getAnnualAppraisalByUserId(userId) {
         const query = 'SELECT * FROM annual_appraisal WHERE user_id = $1 ORDER BY created_at DESC';
+        const result = await pool.query(query, [userId]);
+        return result.rows;
+    }
+
+    static async getPerformanceAssessment(userId) {
+        const query = 'SELECT calculations FROM end_year_review WHERE user_id = $1 ORDER BY created_at DESC';
         const result = await pool.query(query, [userId]);
         return result.rows;
     }

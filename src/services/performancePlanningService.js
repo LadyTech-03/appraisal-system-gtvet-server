@@ -1,26 +1,46 @@
 const pool = require('../config/database');
 const { NotFoundError, ValidationError } = require('../middleware/errorHandler');
+const AppraisalService = require('./appraisalService');
 
 class PerformancePlanningService {
     static async createPerformancePlanning(userId, data) {
         const { keyResultAreas, appraiseeSignatureUrl, appraiserSignatureUrl } = data;
 
+        // Get user's manager_id from users table
+        const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
+        const userResult = await pool.query(userQuery, [userId]);
+        const managerId = userResult.rows[0]?.manager_id || null;
+
+        // Get appraisal_id from personal_info
+        const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
+        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
+
         const query = `
-      INSERT INTO performance_planning (
-        user_id, key_result_areas, appraisee_signature_url, appraiser_signature_url
-      ) VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `;
+        INSERT INTO performance_planning (
+            user_id, manager_id, appraisal_id, key_result_areas, appraisee_signature_url, appraiser_signature_url
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+        `;
 
         const values = [
             userId,
+            managerId,
+            appraisalId,
             JSON.stringify(keyResultAreas),
             appraiseeSignatureUrl,
             appraiserSignatureUrl
         ];
 
         const result = await pool.query(query, values);
-        return result.rows[0];
+        const performancePlanning = result.rows[0];
+
+        // Update appraisal table
+        if (appraisalId) {
+            await AppraisalService.updateAppraisalSection(appraisalId, 'key_result_areas', keyResultAreas);
+        }
+
+        return performancePlanning;
     }
 
     static async updatePerformancePlanning(id, data) {
@@ -69,7 +89,14 @@ class PerformancePlanningService {
             throw new NotFoundError('Performance planning record not found');
         }
 
-        return result.rows[0];
+        const performancePlanning = result.rows[0];
+
+        // Update appraisal table
+        if (performancePlanning.appraisal_id && keyResultAreas) {
+            await AppraisalService.updateAppraisalSection(performancePlanning.appraisal_id, 'key_result_areas', keyResultAreas);
+        }
+
+        return performancePlanning;
     }
 
 

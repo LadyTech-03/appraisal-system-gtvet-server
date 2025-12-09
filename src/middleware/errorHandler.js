@@ -105,6 +105,12 @@ const handleNotFound = (req, res, next) => {
   next(err);
 };
 
+class NotFoundError extends AppError {
+  constructor(message = 'Not found') {
+    super(message, 404);
+  }
+}
+
 // Handle async errors
 const catchAsync = (fn) => {
   return (req, res, next) => {
@@ -179,5 +185,6 @@ module.exports = {
   handleRateLimit,
   handleCorsError,
   handleDatabaseError,
-  handleUploadError
+  handleUploadError,
+  NotFoundError
 };

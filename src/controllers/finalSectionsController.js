@@ -6,7 +6,10 @@ class FinalSectionsController {
         const userId = req.user.id;
         const data = req.body;
 
+        
+        console.log(userId, data, 'this is the final user id and data')
         const result = await FinalSectionsService.createFinalSections(userId, data);
+        console.log(result, 'this is the final sections')
 
         res.status(201).json({
             success: true,

@@ -3,7 +3,8 @@ const { catchAsync } = require('../middleware/errorHandler');
 
 class AnnualAppraisalController {
     static createAnnualAppraisal = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        // Use targetUserId from body if provided (review mode), otherwise use logged-in user
+        const userId = req.body.targetUserId || req.user.id;
         const data = req.body;
 
         const result = await AnnualAppraisalService.createAnnualAppraisal(userId, data);
@@ -41,6 +42,7 @@ class AnnualAppraisalController {
     static getMyAnnualAppraisal = catchAsync(async (req, res) => {
         const userId = req.user.id;
         const result = await AnnualAppraisalService.getAnnualAppraisalByUserId(userId);
+        console.log(result);
 
         res.status(200).json({
             success: true,
@@ -51,6 +53,17 @@ class AnnualAppraisalController {
     static getAnnualAppraisalByUserId = catchAsync(async (req, res) => {
         const { userId } = req.params;
         const result = await AnnualAppraisalService.getAnnualAppraisalByUserId(userId);
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    });
+
+    static getPerformanceAssessment = catchAsync(async (req, res) => {
+        // const userId = req.user.id;
+        const userId = req.params.userId;
+        const result = await AnnualAppraisalService.getPerformanceAssessment(userId);
 
         res.status(200).json({
             success: true,

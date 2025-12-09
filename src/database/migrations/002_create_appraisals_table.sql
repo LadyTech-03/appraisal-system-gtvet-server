@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS appraisals (
     -- Comments and Development
     appraiser_comments TEXT,
     training_development_plan TEXT,
-    assessment_decision VARCHAR(50) CHECK (assessment_decision IN ('outstanding', 'suitable', 'likely_ready', 'not_ready', 'unlikely')),
+    assessment_decision VARCHAR(50),
     appraisee_comments TEXT,
     
     -- HOD Information

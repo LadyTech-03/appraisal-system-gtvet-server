@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { NotFoundError, ValidationError } = require('../middleware/errorHandler');
+const AppraisalService = require('./appraisalService');
 
 class PersonalInfoService {
     /**
@@ -40,20 +41,29 @@ class PersonalInfoService {
         const userResult = await pool.query(userQuery, [userId]);
         const managerId = userResult.rows[0]?.manager_id || null;
 
+        // Create or get appraisal record
+        const appraisalId = await AppraisalService.createOrGetAppraisal(
+            userId,
+            managerId,
+            periodFrom,
+            periodTo
+        );
+
         const query = `
       INSERT INTO personal_info (
-        user_id, manager_id, period_from, period_to, title, other_title, surname, 
+        user_id, manager_id, appraisal_id, period_from, period_to, title, other_title, surname, 
         first_name, other_names, gender, present_job_title, grade_salary, 
         division, date_of_appointment, training_records,
         appraiser_title, appraiser_other_title, appraiser_surname, appraiser_first_name,
         appraiser_other_names, appraiser_position
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *
     `;
 
         const values = [
             userId,
             managerId,
+            appraisalId,
             periodFrom,
             periodTo,
             title,
@@ -76,7 +86,36 @@ class PersonalInfoService {
         ];
 
         const result = await pool.query(query, values);
-        return result.rows[0];
+        const personalInfo = result.rows[0];
+
+        // Update appraisal with employee and appraiser info
+        await AppraisalService.updateAppraisalSection(appraisalId, 'employee_info', {
+            title,
+            other_title: otherTitle,
+            surname,
+            first_name: firstName,
+            other_names: otherNames,
+            gender,
+            present_job_title: presentJobTitle,
+            grade_salary: gradeSalary,
+            division,
+            date_of_appointment: dateOfAppointment
+        });
+
+        if (appraiserTitle || appraiserSurname) {
+            await AppraisalService.updateAppraisalSection(appraisalId, 'appraiser_info', {
+                title: appraiserTitle,
+                other_title: appraiserOtherTitle,
+                surname: appraiserSurname,
+                first_name: appraiserFirstName,
+                other_names: appraiserOtherNames,
+                position: appraiserPosition
+            });
+        }
+
+        await AppraisalService.updateAppraisalSection(appraisalId, 'training_received', trainingRecords);
+
+        return personalInfo;
     }
 
     /**
@@ -162,7 +201,40 @@ class PersonalInfoService {
             throw new NotFoundError('Personal info not found');
         }
 
-        return result.rows[0];
+        const personalInfo = result.rows[0];
+
+        // Update appraisal table if appraisal_id exists
+        if (personalInfo.appraisal_id) {
+            await AppraisalService.updateAppraisalSection(personalInfo.appraisal_id, 'employee_info', {
+                title: title || personalInfo.title,
+                other_title: otherTitle !== undefined ? otherTitle : personalInfo.other_title,
+                surname: surname || personalInfo.surname,
+                first_name: firstName || personalInfo.first_name,
+                other_names: otherNames !== undefined ? otherNames : personalInfo.other_names,
+                gender: gender || personalInfo.gender,
+                present_job_title: presentJobTitle || personalInfo.present_job_title,
+                grade_salary: gradeSalary || personalInfo.grade_salary,
+                division: division || personalInfo.division,
+                date_of_appointment: dateOfAppointment || personalInfo.date_of_appointment
+            });
+
+            if (appraiserTitle || appraiserSurname) {
+                await AppraisalService.updateAppraisalSection(personalInfo.appraisal_id, 'appraiser_info', {
+                    title: appraiserTitle || personalInfo.appraiser_title,
+                    other_title: appraiserOtherTitle !== undefined ? appraiserOtherTitle : personalInfo.appraiser_other_title,
+                    surname: appraiserSurname || personalInfo.appraiser_surname,
+                    first_name: appraiserFirstName || personalInfo.appraiser_first_name,
+                    other_names: appraiserOtherNames !== undefined ? appraiserOtherNames : personalInfo.appraiser_other_names,
+                    position: appraiserPosition || personalInfo.appraiser_position
+                });
+            }
+
+            if (trainingRecords) {
+                await AppraisalService.updateAppraisalSection(personalInfo.appraisal_id, 'training_received', trainingRecords);
+            }
+        }
+
+        return personalInfo;
     }
 
     /**
@@ -197,9 +269,10 @@ class PersonalInfoService {
      */
     static async getPersonalInfoByManagerId(managerId) {
         const query = `
-      SELECT pi.*, u.name as user_name, u.email as user_email, u.employee_id
+      SELECT pi.*, u.name as user_name, u.email as user_email, u.employee_id, a.status AS status
       FROM personal_info pi
       JOIN users u ON pi.user_id = u.id
+      JOIN appraisals a ON pi.appraisal_id = a.id
       WHERE pi.manager_id = $1 
       ORDER BY pi.created_at DESC
     `;
@@ -214,9 +287,10 @@ class PersonalInfoService {
         const { limit = 50, offset = 0 } = options;
 
         const query = `
-      SELECT pi.*, u.name as user_name, u.email as user_email
+      SELECT pi.*, u.name as user_name, u.email as user_email, u.employee_id, a.status AS status
       FROM personal_info pi
       JOIN users u ON pi.user_id = u.id
+      JOIN appraisals a ON pi.appraisal_id = a.id
       ORDER BY pi.created_at DESC
       LIMIT $1 OFFSET $2
     `;

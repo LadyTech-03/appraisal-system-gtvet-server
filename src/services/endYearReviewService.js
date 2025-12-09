@@ -1,31 +1,60 @@
 const pool = require('../config/database');
 const { NotFoundError, ValidationError } = require('../middleware/errorHandler');
+const AppraisalService = require('./appraisalService');
 
 class EndYearReviewService {
     static async createEndYearReview(userId, data) {
-        const { targets, calculations, appraiseeSignatureUrl, appraiseeDate } = data;
+        const { targets, calculations, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
+
+        // Get user's manager_id from users table
+        const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
+        const userResult = await pool.query(userQuery, [userId]);
+        const managerId = userResult.rows[0]?.manager_id || null;
+
+        // Get appraisal_id from personal_info
+        const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
+        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
 
         const query = `
       INSERT INTO end_year_review (
-        user_id, targets, calculations, appraisee_signature_url, appraisee_date
-      ) VALUES ($1, $2, $3, $4, $5)
+        user_id, manager_id, appraisal_id, targets, calculations, appraisee_signature_url, appraisee_date, appraiser_signature_url, appraiser_date
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
 
         const values = [
             userId,
+            managerId,
+            appraisalId,
             JSON.stringify(targets),
             calculations ? JSON.stringify(calculations) : null,
             appraiseeSignatureUrl,
-            appraiseeDate
+            appraiseeDate,
+            appraiserSignatureUrl,
+            appraiserDate
         ];
 
         const result = await pool.query(query, values);
-        return result.rows[0];
+        const endYearReview = result.rows[0];
+
+        // Update appraisal table
+        if (appraisalId) {
+            await AppraisalService.updateAppraisalSection(appraisalId, 'end_of_year_review', {
+                targets,
+                calculations,
+                appraisee_signature_url: appraiseeSignatureUrl,
+                appraisee_date: appraiseeDate,
+                appraiser_signature_url: appraiserSignatureUrl,
+                appraiser_date: appraiserDate
+            });
+        }
+
+        return endYearReview;
     }
 
     static async updateEndYearReview(id, data) {
-        const { targets, calculations, appraiseeSignatureUrl, appraiseeDate } = data;
+        const { targets, calculations, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
         // Build dynamic update query
         const updates = [];
@@ -56,6 +85,18 @@ class EndYearReviewService {
             paramCount++;
         }
 
+        if (appraiserSignatureUrl !== undefined) {
+            updates.push(`appraiser_signature_url = $${paramCount}`);
+            values.push(appraiserSignatureUrl);
+            paramCount++;
+        }
+
+        if (appraiserDate !== undefined) {
+            updates.push(`appraiser_date = $${paramCount}`);
+            values.push(appraiserDate);
+            paramCount++;
+        }
+
         if (updates.length === 0) {
             throw new ValidationError('No fields to update');
         }
@@ -76,7 +117,21 @@ class EndYearReviewService {
             throw new NotFoundError('End-year review record not found');
         }
 
-        return result.rows[0];
+        const endYearReview = result.rows[0];
+
+        // Update appraisal table
+        if (endYearReview.appraisal_id) {
+            await AppraisalService.updateAppraisalSection(endYearReview.appraisal_id, 'end_of_year_review', {
+                targets: targets || endYearReview.targets,
+                calculations: calculations || endYearReview.calculations,
+                appraisee_signature_url: appraiseeSignatureUrl !== undefined ? appraiseeSignatureUrl : endYearReview.appraisee_signature_url,
+                appraisee_date: appraiseeDate !== undefined ? appraiseeDate : endYearReview.appraisee_date,
+                appraiser_signature_url: appraiserSignatureUrl !== undefined ? appraiserSignatureUrl : endYearReview.appraiser_signature_url,
+                appraiser_date: appraiserDate !== undefined ? appraiserDate : endYearReview.appraiser_date
+            });
+        }
+
+        return endYearReview;
     }
 
     static async getEndYearReviewById(id) {

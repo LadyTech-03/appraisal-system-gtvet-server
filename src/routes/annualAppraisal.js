@@ -11,5 +11,6 @@ router.get('/:id', AnnualAppraisalController.getAnnualAppraisalById);
 router.put('/:id', AnnualAppraisalController.updateAnnualAppraisal);
 router.delete('/:id', requireManager, AnnualAppraisalController.deleteAnnualAppraisal);
 router.get('/user/:userId', AnnualAppraisalController.getAnnualAppraisalByUserId);
+router.get('/performance-assessment/:userId', AnnualAppraisalController.getPerformanceAssessment);
 
 module.exports = router;

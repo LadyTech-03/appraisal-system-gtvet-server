@@ -1,19 +1,32 @@
 const pool = require('../config/database');
 const { NotFoundError, ValidationError } = require('../middleware/errorHandler');
+const AppraisalService = require('./appraisalService');
 
 class MidYearReviewService {
     static async createMidYearReview(userId, data) {
         const { targets, competencies, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
+        // Get user's manager_id from users table
+        const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
+        const userResult = await pool.query(userQuery, [userId]);
+        const managerId = userResult.rows[0]?.manager_id || null;
+
+        // Get appraisal_id from personal_info
+        const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
+        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
+
         const query = `
       INSERT INTO mid_year_review (
-        user_id, targets, competencies, appraisee_signature_url, appraisee_date, appraiser_signature_url, appraiser_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        user_id, manager_id, appraisal_id, targets, competencies, appraisee_signature_url, appraisee_date, appraiser_signature_url, appraiser_date
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
 
         const values = [
             userId,
+            managerId,
+            appraisalId,
             JSON.stringify(targets),
             JSON.stringify(competencies),
             appraiseeSignatureUrl,
@@ -23,7 +36,21 @@ class MidYearReviewService {
         ];
 
         const result = await pool.query(query, values);
-        return result.rows[0];
+        const midYearReview = result.rows[0];
+
+        // Update appraisal table
+        if (appraisalId) {
+            await AppraisalService.updateAppraisalSection(appraisalId, 'mid_year_review', {
+                targets,
+                competencies,
+                appraisee_signature_url: appraiseeSignatureUrl,
+                appraisee_date: appraiseeDate,
+                appraiser_signature_url: appraiserSignatureUrl,
+                appraiser_date: appraiserDate
+            });
+        }
+
+        return midYearReview;
     }
 
     static async updateMidYearReview(id, data) {
@@ -90,7 +117,21 @@ class MidYearReviewService {
             throw new NotFoundError('Mid-year review record not found');
         }
 
-        return result.rows[0];
+        const midYearReview = result.rows[0];
+
+        // Update appraisal table
+        if (midYearReview.appraisal_id) {
+            await AppraisalService.updateAppraisalSection(midYearReview.appraisal_id, 'mid_year_review', {
+                targets: targets || midYearReview.targets,
+                competencies: competencies || midYearReview.competencies,
+                appraisee_signature_url: appraiseeSignatureUrl !== undefined ? appraiseeSignatureUrl : midYearReview.appraisee_signature_url,
+                appraisee_date: appraiseeDate !== undefined ? appraiseeDate : midYearReview.appraisee_date,
+                appraiser_signature_url: appraiserSignatureUrl !== undefined ? appraiserSignatureUrl : midYearReview.appraiser_signature_url,
+                appraiser_date: appraiserDate !== undefined ? appraiserDate : midYearReview.appraiser_date
+            });
+        }
+
+        return midYearReview;
     }
 
     static async getMidYearReviewById(id) {

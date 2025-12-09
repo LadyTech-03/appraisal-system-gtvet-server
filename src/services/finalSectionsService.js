@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { NotFoundError, ValidationError } = require('../middleware/errorHandler');
+const AppraisalService = require('./appraisalService');
 
 class FinalSectionsService {
     static async createFinalSections(userId, data) {
@@ -14,17 +15,29 @@ class FinalSectionsService {
             appraiseeDate
         } = data;
 
+        // Get user's manager_id from users table
+        const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
+        const userResult = await pool.query(userQuery, [userId]);
+        const managerId = userResult.rows[0]?.manager_id || null;
+
+        // Get appraisal_id from personal_info
+        const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
+        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
+
         const query = `
       INSERT INTO final_sections (
-        user_id, appraiser_comments, appraiser_signature_url, appraiser_date,
+        user_id, manager_id, appraisal_id, appraiser_comments, appraiser_signature_url, appraiser_date,
         career_development_comments, assessment_decision,
         appraisee_comments, appraisee_signature_url, appraisee_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
 
         const values = [
             userId,
+            managerId,
+            appraisalId,
             appraiserComments,
             appraiserSignatureUrl,
             appraiserDate,
@@ -36,7 +49,23 @@ class FinalSectionsService {
         ];
 
         const result = await pool.query(query, values);
-        return result.rows[0];
+        const finalSections = result.rows[0];
+
+        // Update appraisal table and set status to 'submitted'
+        if (appraisalId) {
+            await AppraisalService.updateAppraisalSection(appraisalId, 'final_sections', {
+                appraiserComments,
+                careerDevelopmentComments,
+                assessmentDecision,
+                appraiseeComments,
+                appraiserSignatureUrl,
+                appraiserDate,
+                appraiseeSignatureUrl,
+                appraiseeDate
+            });
+        }
+
+        return finalSections;
     }
 
     static async updateFinalSections(id, data) {
@@ -121,10 +150,17 @@ class FinalSectionsService {
         const result = await pool.query(query, values);
 
         if (result.rows.length === 0) {
-            throw new NotFoundError('Final sections record not found');
+            throw new NotFoundError('Record not found');
         }
 
-        return result.rows[0];
+        const finalSections = result.rows[0];
+
+        // Update appraisal table
+        if (finalSections.appraisal_id) {
+            await AppraisalService.updateAppraisalSection(finalSections.appraisal_id, 'final_sections', data);
+        }
+
+        return finalSections;
     }
 
     static async getFinalSectionsById(id) {
@@ -132,15 +168,20 @@ class FinalSectionsService {
         const result = await pool.query(query, [id]);
 
         if (result.rows.length === 0) {
-            throw new NotFoundError('Final sections record not found');
+            throw new NotFoundError('Record not found');
         }
 
-        return result.rows[0];
+        return result.rows;
     }
 
     static async getFinalSectionsByUserId(userId) {
         const query = 'SELECT * FROM final_sections WHERE user_id = $1 ORDER BY created_at DESC';
         const result = await pool.query(query, [userId]);
+
+        if (result.rows.length === 0) {
+            throw new NotFoundError('Record not found');
+        }
+        console.log(result.rows, 'this is the final sections')
         return result.rows;
     }
 
@@ -149,7 +190,7 @@ class FinalSectionsService {
         const result = await pool.query(query, [id]);
 
         if (result.rows.length === 0) {
-            throw new NotFoundError('Final sections record not found');
+            throw new NotFoundError('Record not found');
         }
     }
 }
