@@ -3,12 +3,12 @@ const { catchAsync } = require('../middleware/errorHandler');
 
 class FinalSectionsController {
     static createFinalSections = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        const user_id = req.user.id;
         const data = req.body;
 
-        
-        console.log(userId, data, 'this is the final user id and data')
-        const result = await FinalSectionsService.createFinalSections(userId, data);
+
+        console.log(user_id, data, 'this is the final user id and data')
+        const result = await FinalSectionsService.createFinalSections(user_id, data);
         console.log(result, 'this is the final sections')
 
         res.status(201).json({
@@ -42,8 +42,8 @@ class FinalSectionsController {
     });
 
     static getMyFinalSections = catchAsync(async (req, res) => {
-        const userId = req.user.id;
-        const result = await FinalSectionsService.getFinalSectionsByUserId(userId);
+        const user_id = req.user.id;
+        const result = await FinalSectionsService.getFinalSectionsByUserId(user_id);
 
         res.status(200).json({
             success: true,
@@ -52,8 +52,8 @@ class FinalSectionsController {
     });
 
     static getFinalSectionsByUserId = catchAsync(async (req, res) => {
-        const { userId } = req.params;
-        const result = await FinalSectionsService.getFinalSectionsByUserId(userId);
+        const { user_id } = req.params;
+        const result = await FinalSectionsService.getFinalSectionsByUserId(user_id);
 
         res.status(200).json({
             success: true,

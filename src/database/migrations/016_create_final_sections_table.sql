@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS final_sections (
     appraisee_comments TEXT,
     appraisee_signature_url VARCHAR(500),
     appraisee_date DATE,
+    hod_comments TEXT,
+    hod_name VARCHAR(255),
+    hod_signature_url VARCHAR(500),
+    hod_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

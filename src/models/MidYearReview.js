@@ -59,7 +59,7 @@ class MidYearReview {
     if (result.rows.length === 0) return null;
 
     const review = new MidYearReview(result.rows[0]);
-    review.employeeId = result.rows[0].employee_id;
+    review.employee_id = result.rows[0].employee_id;
     review.appraiserId = result.rows[0].appraiser_id;
     review.employeeName = result.rows[0].employee_name;
     review.appraiserName = result.rows[0].appraiser_name;
@@ -82,7 +82,7 @@ class MidYearReview {
     if (result.rows.length === 0) return null;
 
     const review = new MidYearReview(result.rows[0]);
-    review.employeeId = result.rows[0].employee_id;
+    review.employee_id = result.rows[0].employee_id;
     review.appraiserId = result.rows[0].appraiser_id;
     review.employeeName = result.rows[0].employee_name;
     review.appraiserName = result.rows[0].appraiser_name;
@@ -158,7 +158,7 @@ class MidYearReview {
 
     const reviews = result.rows.map(row => {
       const review = new MidYearReview(row);
-      review.employeeId = row.employee_id;
+      review.employee_id = row.employee_id;
       review.appraiserId = row.appraiser_id;
       review.employeeName = row.employee_name;
       review.appraiserName = row.appraiser_name;
@@ -236,7 +236,7 @@ class MidYearReview {
   // Add signature
   async addSignature(signatureType, signature) {
     const field = signatureType === 'appraiser' ? 'appraiser_signature' : 'appraisee_signature';
-    
+
     const result = await query(`
       UPDATE mid_year_reviews 
       SET ${field} = $1, updated_at = CURRENT_TIMESTAMP
@@ -272,7 +272,7 @@ class MidYearReview {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       // Additional fields from joins
-      employeeId: this.employeeId,
+      employee_id: this.employee_id,
       appraiserId: this.appraiserId,
       employeeName: this.employeeName,
       appraiserName: this.appraiserName

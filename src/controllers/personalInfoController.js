@@ -6,10 +6,10 @@ class PersonalInfoController {
      * Create new personal info
      */
     static createPersonalInfo = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        const user_id = req.user.id;
         const personalInfoData = req.body;
 
-        const personalInfo = await PersonalInfoService.createPersonalInfo(userId, personalInfoData);
+        const personalInfo = await PersonalInfoService.createPersonalInfo(user_id, personalInfoData);
 
         res.status(201).json({
             success: true,
@@ -52,9 +52,9 @@ class PersonalInfoController {
      * Get personal info by user ID
      */
     static getPersonalInfoByUserId = catchAsync(async (req, res) => {
-        const { userId } = req.params;
+        const { user_id } = req.params;
 
-        const personalInfo = await PersonalInfoService.getPersonalInfoByUserId(userId);
+        const personalInfo = await PersonalInfoService.getPersonalInfoByUserId(user_id);
 
         res.status(200).json({
             success: true,
@@ -66,9 +66,9 @@ class PersonalInfoController {
      * Get current user's personal info
      */
     static getMyPersonalInfo = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        const user_id = req.user.id;
 
-        const personalInfo = await PersonalInfoService.getPersonalInfoByUserId(userId);
+        const personalInfo = await PersonalInfoService.getPersonalInfoByUserId(user_id);
 
         res.status(200).json({
             success: true,
@@ -94,9 +94,9 @@ class PersonalInfoController {
      * Get team appraisals (for managers)
      */
     static getTeamAppraisals = catchAsync(async (req, res) => {
-        const managerId = req.user.id;
+        const manager_id = req.user.id;
 
-        const personalInfo = await PersonalInfoService.getPersonalInfoByManagerId(managerId);
+        const personalInfo = await PersonalInfoService.getPersonalInfoByManagerId(manager_id);
 
         res.status(200).json({
             success: true,

@@ -10,6 +10,6 @@ router.post('/', FinalSectionsController.createFinalSections);
 router.get('/:id', FinalSectionsController.getFinalSectionsById);
 router.put('/:id', FinalSectionsController.updateFinalSections);
 router.delete('/:id', requireManager, FinalSectionsController.deleteFinalSections);
-router.get('/user/:userId', FinalSectionsController.getFinalSectionsByUserId);
+router.get('/user/:user_id', FinalSectionsController.getFinalSectionsByUserId);
 
 module.exports = router;

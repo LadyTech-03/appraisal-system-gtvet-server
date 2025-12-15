@@ -6,7 +6,7 @@ class PersonalInfoService {
     /**
      * Create new personal info record
      */
-    static async createPersonalInfo(userId, personalInfoData) {
+    static async createPersonalInfo(user_id, personalInfoData) {
         const {
             periodFrom,
             periodTo,
@@ -38,13 +38,13 @@ class PersonalInfoService {
 
         // Get user's manager_id from users table
         const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
-        const userResult = await pool.query(userQuery, [userId]);
-        const managerId = userResult.rows[0]?.manager_id || null;
+        const userResult = await pool.query(userQuery, [user_id]);
+        const manager_id = userResult.rows[0]?.manager_id || null;
 
         // Create or get appraisal record
         const appraisalId = await AppraisalService.createOrGetAppraisal(
-            userId,
-            managerId,
+            user_id,
+            manager_id,
             periodFrom,
             periodTo
         );
@@ -61,8 +61,8 @@ class PersonalInfoService {
     `;
 
         const values = [
-            userId,
-            managerId,
+            user_id,
+            manager_id,
             appraisalId,
             periodFrom,
             periodTo,
@@ -254,29 +254,29 @@ class PersonalInfoService {
     /**
      * Get personal info by user ID
      */
-    static async getPersonalInfoByUserId(userId) {
+    static async getPersonalInfoByUserId(user_id) {
         const query = `
       SELECT * FROM personal_info 
       WHERE user_id = $1 
       ORDER BY created_at DESC
     `;
-        const result = await pool.query(query, [userId]);
+        const result = await pool.query(query, [user_id]);
         return result.rows;
     }
 
     /**
      * Get personal info by manager ID (for team appraisals)
      */
-    static async getPersonalInfoByManagerId(managerId) {
+    static async getPersonalInfoByManagerId(manager_id) {
         const query = `
-      SELECT pi.*, u.name as user_name, u.email as user_email, u.employee_id, a.status AS status
+      SELECT pi.*, CONCAT(u.first_name, ' ', u.surname) as user_name, u.email as user_email, u.employee_id, a.status AS status
       FROM personal_info pi
       JOIN users u ON pi.user_id = u.id
       JOIN appraisals a ON pi.appraisal_id = a.id
       WHERE pi.manager_id = $1 
       ORDER BY pi.created_at DESC
     `;
-        const result = await pool.query(query, [managerId]);
+        const result = await pool.query(query, [manager_id]);
         return result.rows;
     }
 
@@ -287,7 +287,7 @@ class PersonalInfoService {
         const { limit = 50, offset = 0 } = options;
 
         const query = `
-      SELECT pi.*, u.name as user_name, u.email as user_email, u.employee_id, a.status AS status
+      SELECT pi.*, CONCAT(u.first_name, ' ', u.surname) as user_name, u.email as user_email, u.employee_id, a.status AS status
       FROM personal_info pi
       JOIN users u ON pi.user_id = u.id
       JOIN appraisals a ON pi.appraisal_id = a.id

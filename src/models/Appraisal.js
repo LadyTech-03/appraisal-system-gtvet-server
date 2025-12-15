@@ -3,7 +3,7 @@ const { query } = require('../config/database');
 class Appraisal {
   constructor(data) {
     this.id = data.id;
-    this.employeeId = data.employee_id;
+    this.employee_id = data.employee_id;
     this.appraiserId = data.appraiser_id;
     this.periodStart = data.period_start;
     this.periodEnd = data.period_end;
@@ -21,6 +21,7 @@ class Appraisal {
     this.trainingDevelopmentPlan = data.training_development_plan;
     this.assessmentDecision = data.assessment_decision;
     this.appraiseeComments = data.appraisee_comments;
+    this.appraiseeCommentsDate = data.appraisee_comments_date;
     this.hodComments = data.hod_comments;
     this.hodName = data.hod_name;
     this.hodSignature = data.hod_signature;
@@ -28,7 +29,6 @@ class Appraisal {
     this.appraiserSignature = data.appraiser_signature;
     this.appraiserSignatureDate = data.appraiser_signature_date;
     this.appraiseeSignature = data.appraisee_signature;
-    this.appraiseeSignatureDate = data.appraisee_signature_date;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }
@@ -36,7 +36,7 @@ class Appraisal {
   // Create a new appraisal
   static async create(appraisalData) {
     const {
-      employeeId,
+      employee_id,
       appraiserId,
       periodStart,
       periodEnd,
@@ -58,8 +58,8 @@ class Appraisal {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `, [
-      employeeId, appraiserId, periodStart, periodEnd,
-      JSON.stringify(employeeInfo), JSON.stringify(appraiserInfo), 
+      employee_id, appraiserId, periodStart, periodEnd,
+      JSON.stringify(employeeInfo), JSON.stringify(appraiserInfo),
       JSON.stringify(trainingReceived), JSON.stringify(keyResultAreas),
       JSON.stringify(endOfYearReview), JSON.stringify(coreCompetencies),
       JSON.stringify(nonCoreCompetencies), JSON.stringify(overallAssessment)
@@ -72,8 +72,8 @@ class Appraisal {
   static async findById(id) {
     const result = await query(`
       SELECT a.*, 
-             e.name as employee_name, e.employee_id as employee_employee_id,
-             ap.name as appraiser_name, ap.employee_id as appraiser_employee_id
+             CONCAT(e.first_name, ' ', e.surname) as employee_name, e.employee_id as employee_employee_id,
+             CONCAT(ap.first_name, ' ', ap.surname) as appraiser_name, ap.employee_id as appraiser_employee_id
       FROM appraisals a
       LEFT JOIN users e ON a.employee_id = e.id
       LEFT JOIN users ap ON a.appraiser_id = ap.id
@@ -96,7 +96,7 @@ class Appraisal {
     const {
       page = 1,
       limit = 10,
-      employeeId,
+      employee_id,
       appraiserId,
       status,
       periodStart,
@@ -108,10 +108,10 @@ class Appraisal {
     const params = [];
     let paramCount = 0;
 
-    if (employeeId) {
+    if (employee_id) {
       paramCount++;
       whereClause += ` AND a.employee_id = $${paramCount}`;
-      params.push(employeeId);
+      params.push(employee_id);
     }
 
     if (appraiserId) {
@@ -140,7 +140,7 @@ class Appraisal {
 
     if (search) {
       paramCount++;
-      whereClause += ` AND (e.name ILIKE $${paramCount} OR ap.name ILIKE $${paramCount})`;
+      whereClause += ` AND (e.first_name ILIKE $${paramCount} OR e.surname ILIKE $${paramCount} OR ap.first_name ILIKE $${paramCount} OR ap.surname ILIKE $${paramCount})`;
       params.push(`%${search}%`);
     }
 
@@ -152,8 +152,8 @@ class Appraisal {
 
     const result = await query(`
       SELECT a.*, 
-             e.name as employee_name, e.employee_id as employee_employee_id,
-             ap.name as appraiser_name, ap.employee_id as appraiser_employee_id
+             CONCAT(e.first_name, ' ', e.surname) as employee_name, e.employee_id as employee_employee_id,
+             CONCAT(ap.first_name, ' ', ap.surname) as appraiser_name, ap.employee_id as appraiser_employee_id
       FROM appraisals a
       LEFT JOIN users e ON a.employee_id = e.id
       LEFT JOIN users ap ON a.appraiser_id = ap.id
@@ -189,8 +189,9 @@ class Appraisal {
   }
 
   // Get appraisals by employee ID
-  static async findByEmployeeId(employeeId, options = {}) {
-    return await this.findAll({ ...options, employeeId });
+  static async findByEmployeeId(employee_id, options = {}) {
+    console.log(employee_id, 'employee_id')
+    return await this.findAll({ ...options, employee_id });
   }
 
   // Get appraisals by appraiser ID
@@ -293,7 +294,7 @@ class Appraisal {
   // Get signatures
   async getSignatures() {
     const result = await query(`
-      SELECT s.*, u.name as signatory_name
+      SELECT s.*, CONCAT(u.first_name, ' ', u.surname) as signatory_name
       FROM signatures s
       LEFT JOIN users u ON s.signatory_id = u.id
       WHERE s.appraisal_id = $1
@@ -313,7 +314,7 @@ class Appraisal {
   toJSON() {
     return {
       id: this.id,
-      employeeId: this.employeeId,
+      employee_id: this.employee_id,
       appraiserId: this.appraiserId,
       periodStart: this.periodStart,
       periodEnd: this.periodEnd,
@@ -331,6 +332,7 @@ class Appraisal {
       trainingDevelopmentPlan: this.trainingDevelopmentPlan,
       assessmentDecision: this.assessmentDecision,
       appraiseeComments: this.appraiseeComments,
+      appraiseeCommentsDate: this.appraiseeCommentsDate,
       hodComments: this.hodComments,
       hodName: this.hodName,
       hodSignature: this.hodSignature,
@@ -338,7 +340,6 @@ class Appraisal {
       appraiserSignature: this.appraiserSignature,
       appraiserSignatureDate: this.appraiserSignatureDate,
       appraiseeSignature: this.appraiseeSignature,
-      appraiseeSignatureDate: this.appraiseeSignatureDate,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       // Additional fields from joins

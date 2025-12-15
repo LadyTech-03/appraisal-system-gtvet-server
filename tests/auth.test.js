@@ -8,7 +8,7 @@ describe('Authentication Endpoints', () => {
   beforeAll(async () => {
     // Create a test user for testing
     testUser = {
-      employeeId: 'TEST001',
+      employee_id: 'TEST001',
       email: 'test@example.com',
       password: 'password123',
       name: 'Test User',
@@ -55,7 +55,7 @@ describe('Authentication Endpoints', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.user).toBeDefined();
       expect(response.body.data.token).toBeDefined();
-      
+
       authToken = response.body.data.token;
     });
 

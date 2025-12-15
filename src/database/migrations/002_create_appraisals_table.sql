@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS appraisals (
     appraiser_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
-    status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'reviewed', 'closed')),
+    status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'reviewed', 'completed')),
     
     -- Employee Information (JSON)
     employee_info JSONB NOT NULL,

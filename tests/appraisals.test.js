@@ -15,7 +15,7 @@ describe('Appraisals Endpoints', () => {
         email: 'admin@tvet.gov.gh',
         password: 'admin123'
       });
-    
+
     adminToken = adminResponse.body.data.token;
 
     // Login as regular user
@@ -25,7 +25,7 @@ describe('Appraisals Endpoints', () => {
         email: 'test@example.com',
         password: 'newpassword123'
       });
-    
+
     userToken = userResponse.body.data.token;
     testUserId = userResponse.body.data.user.id;
   });
@@ -68,7 +68,7 @@ describe('Appraisals Endpoints', () => {
   describe('POST /api/appraisals', () => {
     it('should create new appraisal with manager token', async () => {
       const newAppraisal = {
-        employeeId: testUserId,
+        employee_id: testUserId,
         appraiserId: testUserId,
         periodStart: '2024-01-01',
         periodEnd: '2024-12-31',
@@ -119,13 +119,13 @@ describe('Appraisals Endpoints', () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      
+
       testAppraisalId = response.body.data.id;
     });
 
     it('should not create appraisal without manager privileges', async () => {
       const newAppraisal = {
-        employeeId: testUserId,
+        employee_id: testUserId,
         appraiserId: testUserId,
         periodStart: '2024-01-01',
         periodEnd: '2024-12-31'

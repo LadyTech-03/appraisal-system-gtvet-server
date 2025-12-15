@@ -3,17 +3,17 @@ const { NotFoundError, ValidationError } = require('../middleware/errorHandler')
 const AppraisalService = require('./appraisalService');
 
 class MidYearReviewService {
-    static async createMidYearReview(userId, data) {
+    static async createMidYearReview(user_id, data) {
         const { targets, competencies, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
         // Get user's manager_id from users table
         const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
-        const userResult = await pool.query(userQuery, [userId]);
-        const managerId = userResult.rows[0]?.manager_id || null;
+        const userResult = await pool.query(userQuery, [user_id]);
+        const manager_id = userResult.rows[0]?.manager_id || null;
 
         // Get appraisal_id from personal_info
         const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
-        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalResult = await pool.query(appraisalQuery, [user_id]);
         const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
 
         const query = `
@@ -24,8 +24,8 @@ class MidYearReviewService {
     `;
 
         const values = [
-            userId,
-            managerId,
+            user_id,
+            manager_id,
             appraisalId,
             JSON.stringify(targets),
             JSON.stringify(competencies),
@@ -131,6 +131,49 @@ class MidYearReviewService {
             });
         }
 
+        // Auto-create end-of-year review with pre-populated targets from mid-year review
+        try {
+            console.log('Checking for end-of-year review creation')
+            // Check if end-of-year review already exists
+            const checkQuery = 'SELECT id FROM end_year_review WHERE user_id = $1';
+            const checkResult = await pool.query(checkQuery, [midYearReview.user_id]);
+
+            if (checkResult.rows.length === 0) {
+                console.log('Creating end-of-year review from mid-year update')
+                // Map targets from mid-year review to end-of-year review structure
+                const updatedTargets = targets || midYearReview.targets;
+                const mappedTargets = updatedTargets.map((target, index) => ({
+                    id: (index + 1).toString(),
+                    target: target.description || "",
+                    performanceAssessment: "",
+                    weightOfTarget: 5,
+                    score: 0,
+                    comments: ""
+                }));
+
+                // Create end-of-year review
+                const endYearQuery = `
+                    INSERT INTO end_year_review (
+                        user_id, manager_id, appraisal_id, targets
+                    ) VALUES ($1, $2, $3, $4)
+                    RETURNING *
+                `;
+
+                const endYearValues = [
+                    midYearReview.user_id,
+                    midYearReview.manager_id,
+                    midYearReview.appraisal_id,
+                    JSON.stringify(mappedTargets)
+                ];
+
+                await pool.query(endYearQuery, endYearValues);
+                console.log('End-of-year review auto-created with pre-populated targets');
+            }
+        } catch (endYearError) {
+            console.error('Error auto-creating end-of-year review:', endYearError);
+            // Don't fail the whole operation if end-year creation fails
+        }
+
         return midYearReview;
     }
 
@@ -145,9 +188,9 @@ class MidYearReviewService {
         return result.rows[0];
     }
 
-    static async getMidYearReviewByUserId(userId) {
+    static async getMidYearReviewByUserId(user_id) {
         const query = 'SELECT * FROM mid_year_review WHERE user_id = $1 ORDER BY created_at DESC';
-        const result = await pool.query(query, [userId]);
+        const result = await pool.query(query, [user_id]);
         return result.rows;
     }
 

@@ -10,6 +10,6 @@ router.post('/', EndYearReviewController.createEndYearReview);
 router.get('/:id', EndYearReviewController.getEndYearReviewById);
 router.put('/:id', EndYearReviewController.updateEndYearReview);
 router.delete('/:id', requireManager, EndYearReviewController.deleteEndYearReview);
-router.get('/user/:userId', EndYearReviewController.getEndYearReviewByUserId);
+router.get('/user/:user_id', EndYearReviewController.getEndYearReviewByUserId);
 
 module.exports = router;

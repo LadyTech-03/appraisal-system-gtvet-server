@@ -21,7 +21,7 @@ Register a new user.
 **Request Body:**
 ```json
 {
-  "employeeId": "EMP001",
+  "employee_id": "EMP001",
   "email": "user@example.com",
   "password": "password123",
   "name": "John Doe",
@@ -82,7 +82,7 @@ Authorization: Bearer <token>
   "success": true,
   "data": {
     "id": "uuid",
-    "employeeId": "EMP001",
+    "employee_id": "EMP001",
     "email": "user@example.com",
     "name": "John Doe",
     "role": "Lecturer",
@@ -124,7 +124,7 @@ Create new user (Admin only).
 **Request Body:**
 ```json
 {
-  "employeeId": "EMP002",
+  "employee_id": "EMP002",
   "email": "newuser@example.com",
   "password": "password123",
   "name": "Jane Doe",
@@ -153,7 +153,7 @@ Get all appraisals (Manager/Admin only).
 **Query Parameters:**
 - `page` (optional): Page number
 - `limit` (optional): Items per page
-- `employeeId` (optional): Filter by employee
+- `employee_id` (optional): Filter by employee
 - `appraiserId` (optional): Filter by appraiser
 - `status` (optional): Filter by status
 - `periodStart` (optional): Filter by period start
@@ -165,7 +165,7 @@ Create new appraisal.
 **Request Body:**
 ```json
 {
-  "employeeId": "uuid",
+  "employee_id": "uuid",
   "appraiserId": "uuid",
   "periodStart": "2024-01-01",
   "periodEnd": "2024-12-31",

@@ -3,10 +3,10 @@ const { catchAsync } = require('../middleware/errorHandler');
 
 class EndYearReviewController {
     static createEndYearReview = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        const user_id = req.user.id;
         const data = req.body;
 
-        const result = await EndYearReviewService.createEndYearReview(userId, data);
+        const result = await EndYearReviewService.createEndYearReview(user_id, data);
 
         res.status(201).json({
             success: true,
@@ -39,8 +39,8 @@ class EndYearReviewController {
     });
 
     static getMyEndYearReview = catchAsync(async (req, res) => {
-        const userId = req.user.id;
-        const result = await EndYearReviewService.getEndYearReviewByUserId(userId);
+        const user_id = req.user.id;
+        const result = await EndYearReviewService.getEndYearReviewByUserId(user_id);
 
         res.status(200).json({
             success: true,
@@ -49,8 +49,8 @@ class EndYearReviewController {
     });
 
     static getEndYearReviewByUserId = catchAsync(async (req, res) => {
-        const { userId } = req.params;
-        const result = await EndYearReviewService.getEndYearReviewByUserId(userId);
+        const { user_id } = req.params;
+        const result = await EndYearReviewService.getEndYearReviewByUserId(user_id);
 
         res.status(200).json({
             success: true,

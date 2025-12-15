@@ -45,7 +45,7 @@ class EmailService {
         <p><strong>Your login details:</strong></p>
         <ul>
           <li>Email: ${user.email}</li>
-          <li>Employee ID: ${user.employeeId}</li>
+          <li>Employee ID: ${user.employee_id}</li>
           <li>Role: ${user.role}</li>
         </ul>
         <p>Please log in to the system to complete your profile and start using the appraisal system.</p>
@@ -62,7 +62,7 @@ class EmailService {
   async sendPasswordResetEmail(user, resetToken) {
     const subject = 'Password Reset - TVET Appraisal System';
     const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">Password Reset Request</h2>
@@ -83,7 +83,7 @@ class EmailService {
   // Send appraisal notification email
   async sendAppraisalNotificationEmail(employee, appraiser, appraisal) {
     const subject = 'New Appraisal Assigned - TVET Appraisal System';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">New Appraisal Assigned</h2>
@@ -107,7 +107,7 @@ class EmailService {
   // Send appraisal submission notification
   async sendAppraisalSubmissionNotification(employee, appraiser, appraisal) {
     const subject = 'Appraisal Submitted for Review - TVET Appraisal System';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">Appraisal Submitted for Review</h2>
@@ -131,7 +131,7 @@ class EmailService {
   // Send appraisal completion notification
   async sendAppraisalCompletionNotification(employee, appraisal) {
     const subject = 'Appraisal Completed - TVET Appraisal System';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">Appraisal Completed</h2>
@@ -155,7 +155,7 @@ class EmailService {
   // Send access request notification
   async sendAccessRequestNotification(requester, targetUser, request) {
     const subject = 'Access Request - TVET Appraisal System';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">Access Request</h2>
@@ -179,7 +179,7 @@ class EmailService {
   // Send access request approval notification
   async sendAccessRequestApprovalNotification(requester, request) {
     const subject = 'Access Request Approved - TVET Appraisal System';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">Access Request Approved</h2>
@@ -202,7 +202,7 @@ class EmailService {
   // Send access request rejection notification
   async sendAccessRequestRejectionNotification(requester, request) {
     const subject = 'Access Request Rejected - TVET Appraisal System';
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2c3e50;">Access Request Rejected</h2>
@@ -233,7 +233,7 @@ class EmailService {
       </div>
     `;
 
-    const emailPromises = users.map(user => 
+    const emailPromises = users.map(user =>
       this.sendEmail(user.email, subject, html)
     );
 

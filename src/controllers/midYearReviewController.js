@@ -3,10 +3,10 @@ const { catchAsync } = require('../middleware/errorHandler');
 
 class MidYearReviewController {
     static createMidYearReview = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        const user_id = req.user.id;
         const data = req.body;
 
-        const result = await MidYearReviewService.createMidYearReview(userId, data);
+        const result = await MidYearReviewService.createMidYearReview(user_id, data);
 
         res.status(201).json({
             success: true,
@@ -39,8 +39,8 @@ class MidYearReviewController {
     });
 
     static getMyMidYearReview = catchAsync(async (req, res) => {
-        const userId = req.user.id;
-        const result = await MidYearReviewService.getMidYearReviewByUserId(userId);
+        const user_id = req.user.id;
+        const result = await MidYearReviewService.getMidYearReviewByUserId(user_id);
 
         res.status(200).json({
             success: true,
@@ -49,8 +49,8 @@ class MidYearReviewController {
     });
 
     static getMidYearReviewByUserId = catchAsync(async (req, res) => {
-        const { userId } = req.params;
-        const result = await MidYearReviewService.getMidYearReviewByUserId(userId);
+        const { user_id } = req.params;
+        const result = await MidYearReviewService.getMidYearReviewByUserId(user_id);
 
         res.status(200).json({
             success: true,

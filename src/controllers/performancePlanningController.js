@@ -3,10 +3,10 @@ const { catchAsync } = require('../middleware/errorHandler');
 
 class PerformancePlanningController {
     static createPerformancePlanning = catchAsync(async (req, res) => {
-        const userId = req.user.id;
+        const user_id = req.user.id;
         const data = req.body;
 
-        const result = await PerformancePlanningService.createPerformancePlanning(userId, data);
+        const result = await PerformancePlanningService.createPerformancePlanning(user_id, data);
 
         res.status(201).json({
             success: true,
@@ -39,8 +39,8 @@ class PerformancePlanningController {
     });
 
     static getMyPerformancePlanning = catchAsync(async (req, res) => {
-        const userId = req.user.id;
-        const result = await PerformancePlanningService.getPerformancePlanningByUserId(userId);
+        const user_id = req.user.id;
+        const result = await PerformancePlanningService.getPerformancePlanningByUserId(user_id);
 
         res.status(200).json({
             success: true,
@@ -49,8 +49,8 @@ class PerformancePlanningController {
     });
 
     static getPerformancePlanningByUserId = catchAsync(async (req, res) => {
-        const { userId } = req.params;
-        const result = await PerformancePlanningService.getPerformancePlanningByUserId(userId);
+        const { user_id } = req.params;
+        const result = await PerformancePlanningService.getPerformancePlanningByUserId(user_id);
 
         res.status(200).json({
             success: true,

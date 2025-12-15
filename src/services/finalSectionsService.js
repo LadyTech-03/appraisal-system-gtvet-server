@@ -3,7 +3,7 @@ const { NotFoundError, ValidationError } = require('../middleware/errorHandler')
 const AppraisalService = require('./appraisalService');
 
 class FinalSectionsService {
-    static async createFinalSections(userId, data) {
+    static async createFinalSections(user_id, data) {
         const {
             appraiserComments,
             appraiserSignatureUrl,
@@ -12,31 +12,36 @@ class FinalSectionsService {
             assessmentDecision,
             appraiseeComments,
             appraiseeSignatureUrl,
-            appraiseeDate
+            appraiseeDate,
+            hodComments,
+            hodName,
+            hodSignatureUrl,
+            hodDate
         } = data;
 
         // Get user's manager_id from users table
         const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
-        const userResult = await pool.query(userQuery, [userId]);
-        const managerId = userResult.rows[0]?.manager_id || null;
+        const userResult = await pool.query(userQuery, [user_id]);
+        const manager_id = userResult.rows[0]?.manager_id || null;
 
         // Get appraisal_id from personal_info
         const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
-        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalResult = await pool.query(appraisalQuery, [user_id]);
         const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
 
         const query = `
       INSERT INTO final_sections (
         user_id, manager_id, appraisal_id, appraiser_comments, appraiser_signature_url, appraiser_date,
         career_development_comments, assessment_decision,
-        appraisee_comments, appraisee_signature_url, appraisee_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        appraisee_comments, appraisee_signature_url, appraisee_date,
+        hod_comments, hod_name, hod_signature_url, hod_date
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *
     `;
 
         const values = [
-            userId,
-            managerId,
+            user_id,
+            manager_id,
             appraisalId,
             appraiserComments,
             appraiserSignatureUrl,
@@ -45,7 +50,11 @@ class FinalSectionsService {
             assessmentDecision,
             appraiseeComments,
             appraiseeSignatureUrl,
-            appraiseeDate
+            appraiseeDate,
+            hodComments,
+            hodName,
+            hodSignatureUrl,
+            hodDate
         ];
 
         const result = await pool.query(query, values);
@@ -61,7 +70,11 @@ class FinalSectionsService {
                 appraiserSignatureUrl,
                 appraiserDate,
                 appraiseeSignatureUrl,
-                appraiseeDate
+                appraiseeDate,
+                hodComments,
+                hodName,
+                hodSignatureUrl,
+                hodDate
             });
         }
 
@@ -77,7 +90,11 @@ class FinalSectionsService {
             assessmentDecision,
             appraiseeComments,
             appraiseeSignatureUrl,
-            appraiseeDate
+            appraiseeDate,
+            hodComments,
+            hodName,
+            hodSignatureUrl,
+            hodDate
         } = data;
 
         // Build dynamic update query
@@ -133,6 +150,30 @@ class FinalSectionsService {
             paramCount++;
         }
 
+        if (hodComments !== undefined) {
+            updates.push(`hod_comments = $${paramCount}`);
+            values.push(hodComments);
+            paramCount++;
+        }
+
+        if (hodName !== undefined) {
+            updates.push(`hod_name = $${paramCount}`);
+            values.push(hodName);
+            paramCount++;
+        }
+
+        if (hodSignatureUrl !== undefined) {
+            updates.push(`hod_signature_url = $${paramCount}`);
+            values.push(hodSignatureUrl);
+            paramCount++;
+        }
+
+        if (hodDate !== undefined) {
+            updates.push(`hod_date = $${paramCount}`);
+            values.push(hodDate);
+            paramCount++;
+        }
+
         if (updates.length === 0) {
             throw new ValidationError('No fields to update');
         }
@@ -174,9 +215,9 @@ class FinalSectionsService {
         return result.rows;
     }
 
-    static async getFinalSectionsByUserId(userId) {
+    static async getFinalSectionsByUserId(user_id) {
         const query = 'SELECT * FROM final_sections WHERE user_id = $1 ORDER BY created_at DESC';
-        const result = await pool.query(query, [userId]);
+        const result = await pool.query(query, [user_id]);
 
         if (result.rows.length === 0) {
             throw new NotFoundError('Record not found');

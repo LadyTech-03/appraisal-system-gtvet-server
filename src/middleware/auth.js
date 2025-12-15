@@ -4,6 +4,7 @@ const User = require('../models/User');
 // Middleware to authenticate JWT token
 const authenticateToken = async (req, res, next) => {
   try {
+    console.log('Authentication middleware called', req.headers);
     const authHeader = req.headers.authorization;
     const token = extractToken(authHeader);
 
@@ -20,7 +21,7 @@ const authenticateToken = async (req, res, next) => {
     // Get user from database
     const user = await User.findById(decoded.id);
 
-    if (!user || !user.isActive) {
+    if (!user || !user.is_active) {
       return res.status(401).json({
         success: false,
         message: 'Invalid or expired token'
@@ -95,7 +96,7 @@ const canAccessAppraisal = async (req, res, next) => {
 
     // Check if user can access this appraisal
     const canAccess =
-      req.user.id === appraisal.employeeId || // Employee
+      req.user.id === appraisal.employee_id || // Employee
       req.user.id === appraisal.appraiserId || // Appraiser
       req.user.role === 'Director-General' || // Admin
       req.user.role === 'System Administrator' || // Admin
@@ -155,7 +156,7 @@ const canManageUser = async (req, res, next) => {
       req.user.role === 'Principal' || // Admin
       req.user.role === 'Vice Principal' || // Admin
       req.user.role === 'Head of Department' || // Manager
-      (req.user.role === 'Senior Lecturer' && targetUser.managerId === req.user.id); // Direct manager
+      (req.user.role === 'Senior Lecturer' && targetUser.manager_id === req.user.id); // Direct manager
 
     if (!canManage) {
       return res.status(403).json({
@@ -184,7 +185,7 @@ const requireOwnership = (req, res, next) => {
     });
   }
 
-  const targetUserId = req.params.id || req.params.userId;
+  const targetUserId = req.params.id || req.params.user_id;
 
   if (req.user.id !== targetUserId) {
     return res.status(403).json({

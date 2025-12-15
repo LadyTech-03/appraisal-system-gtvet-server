@@ -10,6 +10,6 @@ router.post('/', MidYearReviewController.createMidYearReview);
 router.get('/:id', MidYearReviewController.getMidYearReviewById);
 router.put('/:id', MidYearReviewController.updateMidYearReview);
 router.delete('/:id', requireManager, MidYearReviewController.deleteMidYearReview);
-router.get('/user/:userId', MidYearReviewController.getMidYearReviewByUserId);
+router.get('/user/:user_id', MidYearReviewController.getMidYearReviewByUserId);
 
 module.exports = router;

@@ -3,17 +3,17 @@ const { NotFoundError, ValidationError } = require('../middleware/errorHandler')
 const AppraisalService = require('./appraisalService');
 
 class EndYearReviewService {
-    static async createEndYearReview(userId, data) {
+    static async createEndYearReview(user_id, data) {
         const { targets, calculations, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
         // Get user's manager_id from users table
         const userQuery = 'SELECT manager_id FROM users WHERE id = $1';
-        const userResult = await pool.query(userQuery, [userId]);
-        const managerId = userResult.rows[0]?.manager_id || null;
+        const userResult = await pool.query(userQuery, [user_id]);
+        const manager_id = userResult.rows[0]?.manager_id || null;
 
         // Get appraisal_id from personal_info
         const appraisalQuery = 'SELECT appraisal_id FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1';
-        const appraisalResult = await pool.query(appraisalQuery, [userId]);
+        const appraisalResult = await pool.query(appraisalQuery, [user_id]);
         const appraisalId = appraisalResult.rows[0]?.appraisal_id || null;
 
         const query = `
@@ -24,8 +24,8 @@ class EndYearReviewService {
     `;
 
         const values = [
-            userId,
-            managerId,
+            user_id,
+            manager_id,
             appraisalId,
             JSON.stringify(targets),
             calculations ? JSON.stringify(calculations) : null,
@@ -145,9 +145,9 @@ class EndYearReviewService {
         return result.rows[0];
     }
 
-    static async getEndYearReviewByUserId(userId) {
+    static async getEndYearReviewByUserId(user_id) {
         const query = 'SELECT * FROM end_year_review WHERE user_id = $1 ORDER BY created_at DESC';
-        const result = await pool.query(query, [userId]);
+        const result = await pool.query(query, [user_id]);
         return result.rows;
     }
 

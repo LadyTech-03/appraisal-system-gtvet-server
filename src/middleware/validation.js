@@ -1,24 +1,24 @@
 const Joi = require('joi');
-  const { ROLE_VALUES } = require('../utils/roles');
+const { ROLE_VALUES } = require('../utils/roles');
 
 // Validation middleware factory
 const validate = (schema, property = 'body') => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req[property], { abortEarly: false });
-    
+
     if (error) {
       const errors = error.details.map(detail => ({
         field: detail.path.join('.'),
         message: detail.message
       }));
-      
+
       return res.status(400).json({
         success: false,
         message: 'Validation error',
         errors
       });
     }
-    
+
     req[property] = value;
     next();
   };
@@ -27,7 +27,7 @@ const validate = (schema, property = 'body') => {
 // User validation schemas
 const userSchemas = {
   create: Joi.object({
-    employeeId: Joi.string().required().messages({
+    employee_id: Joi.string().required().messages({
       'string.empty': 'Employee ID is required',
       'any.required': 'Employee ID is required'
     }),
@@ -53,12 +53,12 @@ const userSchemas = {
     unit: Joi.string().allow(null),
     position: Joi.string().allow(null),
     grade: Joi.string().allow(null),
-    managerId: Joi.string().uuid().allow(null),
+    manager_id: Joi.string().uuid().allow(null),
     phone: Joi.string().allow(null)
   }),
 
   update: Joi.object({
-    employeeId: Joi.string(),
+    employee_id: Joi.string(),
     email: Joi.string().email(),
     name: Joi.string(),
     role: Joi.string().valid(...ROLE_VALUES).messages({
@@ -68,9 +68,9 @@ const userSchemas = {
     unit: Joi.string().allow(null),
     position: Joi.string().allow(null),
     grade: Joi.string().allow(null),
-    managerId: Joi.string().uuid().allow(null),
+    manager_id: Joi.string().uuid().allow(null),
     phone: Joi.string().allow(null),
-    isActive: Joi.boolean()
+    is_active: Joi.boolean()
   }),
 
   changePassword: Joi.object({
@@ -104,7 +104,7 @@ const authSchemas = {
 // Appraisal validation schemas
 const appraisalSchemas = {
   create: Joi.object({
-    employeeId: Joi.string().uuid().required().messages({
+    employee_id: Joi.string().uuid().required().messages({
       'string.uuid': 'Invalid employee ID',
       'any.required': 'Employee ID is required'
     }),
@@ -201,7 +201,7 @@ const appraisalSchemas = {
 // Training record validation schemas
 const trainingRecordSchemas = {
   create: Joi.object({
-    userId: Joi.string().uuid().required().messages({
+    user_id: Joi.string().uuid().required().messages({
       'string.uuid': 'Invalid user ID',
       'any.required': 'User ID is required'
     }),
@@ -280,14 +280,14 @@ const querySchemas = {
     role: Joi.string(),
     division: Joi.string(),
     unit: Joi.string(),
-    isActive: Joi.boolean().default(true),
+    is_active: Joi.boolean().default(true),
     search: Joi.string().allow('')
   }),
 
   appraisalFilters: Joi.object({
     page: Joi.number().min(1).default(1),
     limit: Joi.number().min(1).max(100).default(10),
-    employeeId: Joi.string().uuid(),
+    employee_id: Joi.string().uuid(),
     appraiserId: Joi.string().uuid(),
     status: Joi.string().valid('draft', 'submitted', 'reviewed', 'closed'),
     periodStart: Joi.date(),

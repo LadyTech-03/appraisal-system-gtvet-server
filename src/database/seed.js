@@ -47,16 +47,16 @@ const runSeeder = async (filename) => {
   try {
     const seederPath = path.join(__dirname, 'seeders', filename);
     const seederSQL = fs.readFileSync(seederPath, 'utf8');
-    
+
     console.log(`Running seeder: ${filename}`);
-    
+
     // Special handling for admin user seeder
     if (filename === '002_seed_admin_user.sql') {
       await seedAdminUser();
     } else {
       await query(seederSQL);
     }
-    
+
     await markSeederApplied(filename);
     console.log(`Seeder ${filename} completed successfully`);
   } catch (error) {
@@ -70,30 +70,38 @@ const seedAdminUser = async () => {
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@tvet.gov.gh';
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
-  
+
   await query(`
     INSERT INTO users (
       employee_id,
       email,
       password_hash,
-      name,
+      title,
+      first_name,
+      surname,
+      gender,
+      appointment_date,
       role,
       division,
       position,
       is_active
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     ON CONFLICT (employee_id) DO NOTHING
   `, [
     'ADMIN001',
     adminEmail,
     hashedPassword,
-    'Cynthia Baidoo',
+    'Mrs',
+    'Cynthia',
+    'Baidoo',
+    'Female',
+    '2020-01-01',
     'System Administrator',
     'Administration',
     'System Administrator',
     true
   ]);
-  
+
   console.log(`Admin user created with password from environment variable`);
 };
 
@@ -101,33 +109,33 @@ const seedAdminUser = async () => {
 const runSeeders = async () => {
   try {
     console.log('Starting database seeding...');
-    
+
     // Create seeders table
     await createSeedersTable();
-    
+
     // Get list of seeder files
     const seedersDir = path.join(__dirname, 'seeders');
     const seederFiles = fs.readdirSync(seedersDir)
       .filter(file => file.endsWith('.sql'))
       .sort();
-    
+
     // Get applied seeders
     const appliedSeeders = await getAppliedSeeders();
-    
+
     // Run pending seeders
     const pendingSeeders = seederFiles.filter(file => !appliedSeeders.includes(file));
-    
+
     if (pendingSeeders.length === 0) {
       console.log('No pending seeders found');
       return;
     }
-    
+
     console.log(`Found ${pendingSeeders.length} pending seeders`);
-    
+
     for (const seederFile of pendingSeeders) {
       await runSeeder(seederFile);
     }
-    
+
     console.log('All seeders completed successfully');
   } catch (error) {
     console.error('Seeding failed:', error);

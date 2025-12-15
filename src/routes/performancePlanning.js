@@ -11,6 +11,6 @@ router.post('/', PerformancePlanningController.createPerformancePlanning);
 router.get('/:id', PerformancePlanningController.getPerformancePlanningById);
 router.put('/:id', PerformancePlanningController.updatePerformancePlanning);
 router.delete('/:id', requireManager, PerformancePlanningController.deletePerformancePlanning);
-router.get('/user/:userId', PerformancePlanningController.getPerformancePlanningByUserId);
+router.get('/user/:user_id', PerformancePlanningController.getPerformancePlanningByUserId);
 
 module.exports = router;

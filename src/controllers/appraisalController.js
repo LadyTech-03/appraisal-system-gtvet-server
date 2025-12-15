@@ -67,10 +67,10 @@ class AppraisalController {
 
   // Get appraisals by employee
   static getAppraisalsByEmployee = catchAsync(async (req, res) => {
-    const employeeId = req.params.employeeId;
+    const employee_id = req.params.employee_id;
     const options = req.query;
 
-    const result = await AppraisalService.getAppraisalsByEmployee(employeeId, options);
+    const result = await AppraisalService.getAppraisalsByEmployee(employee_id, options);
 
     res.status(200).json({
       success: true,
@@ -158,6 +158,7 @@ class AppraisalController {
   });
 
   static getDashboardOverview = catchAsync(async (req, res) => {
+    console.log(req.user, 'I got here');
     const overview = await AppraisalService.getDashboardOverview(req.user);
 
     res.status(200).json({
@@ -168,10 +169,10 @@ class AppraisalController {
 
   // Get team appraisals
   static getTeamAppraisals = catchAsync(async (req, res) => {
-    const managerId = req.user.id;
+    const manager_id = req.user.id;
     const options = req.query;
 
-    const result = await AppraisalService.getTeamAppraisals(managerId, options);
+    const result = await AppraisalService.getTeamAppraisals(manager_id, options);
 
     res.status(200).json({
       success: true,
@@ -205,9 +206,9 @@ class AppraisalController {
 
   // Submit appraisal (consolidate all form data)
   static submitAppraisal = catchAsync(async (req, res) => {
-    const userId = req.user.id;
+    const user_id = req.user.id;
 
-    const appraisal = await AppraisalService.submitAppraisal(userId);
+    const appraisal = await AppraisalService.submitAppraisal(user_id);
 
     res.status(201).json({
       success: true,
@@ -218,9 +219,9 @@ class AppraisalController {
 
   // Get my submitted appraisals
   static getMyAppraisals = catchAsync(async (req, res) => {
-    const userId = req.user.id;
+    const user_id = req.user.id;
 
-    const appraisals = await AppraisalService.getAppraisalsByEmployee(userId);
+    const appraisals = await AppraisalService.getAppraisalsByEmployee(user_id);
 
     res.status(200).json({
       success: true,
@@ -243,10 +244,10 @@ class AppraisalController {
   // Approve appraisal (manager only)
   static approveAppraisal = catchAsync(async (req, res) => {
     const appraisalId = req.params.id;
-    const managerId = req.user.id;
+    const manager_id = req.user.id;
     const { comments } = req.body;
 
-    const appraisal = await AppraisalService.approveAppraisal(appraisalId, managerId, comments);
+    const appraisal = await AppraisalService.approveAppraisal(appraisalId, manager_id, comments);
 
     res.status(200).json({
       success: true,
@@ -258,10 +259,10 @@ class AppraisalController {
   // Reject appraisal (manager only)
   static rejectAppraisal = catchAsync(async (req, res) => {
     const appraisalId = req.params.id;
-    const managerId = req.user.id;
+    const manager_id = req.user.id;
     const { comments } = req.body;
 
-    const appraisal = await AppraisalService.rejectAppraisal(appraisalId, managerId, comments);
+    const appraisal = await AppraisalService.rejectAppraisal(appraisalId, manager_id, comments);
 
     res.status(200).json({
       success: true,
@@ -273,9 +274,9 @@ class AppraisalController {
   // Complete appraisal (manager only) - finalizes and cleans up form tables
   static completeAppraisal = catchAsync(async (req, res) => {
     const appraisalId = req.params.id;
-    const managerId = req.user.id;
+    const manager_id = req.user.id;
 
-    const appraisal = await AppraisalService.completeAppraisal(appraisalId, managerId);
+    const appraisal = await AppraisalService.completeAppraisal(appraisalId, manager_id);
 
     res.status(200).json({
       success: true,

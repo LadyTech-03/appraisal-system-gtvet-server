@@ -35,7 +35,7 @@ class AppraisalService {
   static async createAppraisal(appraisalData) {
     try {
       // Verify employee exists
-      const employee = await User.findById(appraisalData.employeeId);
+      const employee = await User.findById(appraisalData.employee_id);
       if (!employee) {
         throw new AppError('Employee not found', 404);
       }
@@ -50,7 +50,7 @@ class AppraisalService {
       const existingAppraisal = await Appraisal.findByPeriod(
         appraisalData.periodStart,
         appraisalData.periodEnd,
-        { employeeId: appraisalData.employeeId }
+        { employee_id: appraisalData.employee_id }
       );
 
       if (existingAppraisal.appraisals.length > 0) {
@@ -103,9 +103,9 @@ class AppraisalService {
   }
 
   // Get appraisals by employee
-  static async getAppraisalsByEmployee(employeeId, options = {}) {
+  static async getAppraisalsByEmployee(employee_id, options = {}) {
     try {
-      const result = await Appraisal.findByEmployeeId(employeeId, options);
+      const result = await Appraisal.findByEmployeeId(employee_id, options);
       return result;
     } catch (error) {
       throw error;
@@ -243,50 +243,78 @@ class AppraisalService {
 
   static async getDashboardOverview(user) {
     try {
-      const userId = user.id;
+      const user_id = user.id;
       const isAdmin = ['Director-General', 'System Administrator'].includes(user.role);
 
+      // Get full user details
+      const userResult = await query(`
+        SELECT * FROM users WHERE id = $1
+      `, [user_id]);
+
+      const userDetails = userResult.rows[0];
+
+      // Get appraisal counts by status for this user
       const statusCountsResult = await query(`
         SELECT status, COUNT(*)::int AS count
         FROM appraisals
-        WHERE employee_id = $1 OR appraiser_id = $1
+        WHERE employee_id = $1
         GROUP BY status
-      `, [userId]);
+      `, [user_id]);
 
       const statusCounts = statusCountsResult.rows.reduce((acc, row) => {
         acc[row.status] = row.count;
         return acc;
-      }, { draft: 0, submitted: 0, reviewed: 0, closed: 0 });
+      }, { 'in-progress': 0, submitted: 0, reviewed: 0, completed: 0 });
 
-      const myAppraisalsCountResult = await query(`
+      // Total appraisals count
+      const totalAppraisalsCountResult = await query(`
         SELECT COUNT(*)::int AS count
         FROM appraisals
         WHERE employee_id = $1
-      `, [userId]);
+      `, [user_id]);
+
+      // Get count of users who have this user as manager
+      const teamCountResult = await query(`
+        SELECT COUNT(*)::int AS count
+        FROM users
+        WHERE manager_id = $1 AND is_active = true
+      `, [user_id]);
 
       const averageRatingResult = await query(`
         SELECT AVG((overall_assessment->>'overallRating')::numeric) AS avg_rating
         FROM appraisals
         WHERE employee_id = $1 AND overall_assessment IS NOT NULL
-      `, [userId]);
+      `, [user_id]);
 
       const averageRating = parseFloat(averageRatingResult.rows[0].avg_rating) || 0;
 
       const recentAppraisalsResult = await query(`
         SELECT a.*, 
-               e.name as employee_name, e.employee_id as employee_employee_id,
-               ap.name as appraiser_name, ap.employee_id as appraiser_employee_id
+               e.first_name as employee_first_name, e.surname as employee_surname, e.employee_id as employee_employee_id,
+               ap.first_name as appraiser_first_name, ap.surname as appraiser_surname, ap.employee_id as appraiser_employee_id
         FROM appraisals a
         LEFT JOIN users e ON a.employee_id = e.id
         LEFT JOIN users ap ON a.appraiser_id = ap.id
         WHERE a.employee_id = $1 OR a.appraiser_id = $1
         ORDER BY a.updated_at DESC
         LIMIT 5
-      `, [userId]);
+      `, [user_id]);
 
-      const recentAppraisals = recentAppraisalsResult.rows.map(row => new Appraisal(row).toJSON());
+      const recentAppraisals = recentAppraisalsResult.rows.map(row => {
+        const appraisal = new Appraisal(row).toJSON();
+        // Add employee and appraiser names
+        appraisal.employeeName = row.employee_first_name && row.employee_surname
+          ? `${row.employee_first_name} ${row.employee_surname}`
+          : null;
+        appraisal.appraiserName = row.appraiser_first_name && row.appraiser_surname
+          ? `${row.appraiser_first_name} ${row.appraiser_surname}`
+          : null;
+        appraisal.employeeEmployeeId = row.employee_employee_id;
+        appraisal.appraiserEmployeeId = row.appraiser_employee_id;
+        return appraisal;
+      });
 
-      const teamMembers = await User.findByManagerId(userId);
+      const teamMembers = await User.findByManagerId(user_id);
       const teamMembersCount = teamMembers.length;
 
       let totalUsers = null;
@@ -296,9 +324,18 @@ class AppraisalService {
       }
 
       return {
-        myAppraisals: myAppraisalsCountResult.rows[0].count,
-        pendingAppraisals: statusCounts.draft || 0,
-        completedAppraisals: statusCounts.closed || 0,
+        // user: userDetails,
+        totalAppraisals: totalAppraisalsCountResult.rows[0].count,
+        appraisalsInProgress: statusCounts['in-progress'] || 0,
+        appraisalsSubmitted: statusCounts.submitted || 0,
+        appraisalsCompleted: statusCounts.completed || 0,
+        appraisalsReviewed: statusCounts.reviewed || 0,
+        teamMembersCount: teamCountResult.rows[0].count,
+
+        // Legacy fields for backward compatibility
+        myAppraisals: totalAppraisalsCountResult.rows[0].count,
+        pendingAppraisals: statusCounts['in-progress'] || 0,
+        completedAppraisals: statusCounts.completed || 0,
         inReviewAppraisals: statusCounts.reviewed || 0,
         submittedAppraisals: statusCounts.submitted || 0,
         averageRating,
@@ -312,10 +349,10 @@ class AppraisalService {
   }
 
   // Get team appraisals
-  static async getTeamAppraisals(managerId, options = {}) {
+  static async getTeamAppraisals(manager_id, options = {}) {
     try {
       // Get manager's subordinates
-      const subordinates = await User.findByManagerId(managerId);
+      const subordinates = await User.findByManagerId(manager_id);
       const subordinateIds = subordinates.map(sub => sub.id);
 
       if (subordinateIds.length === 0) {
@@ -331,7 +368,7 @@ class AppraisalService {
       // Get appraisals for all subordinates
       const result = await Appraisal.findAll({
         ...options,
-        employeeId: subordinateIds
+        employee_id: subordinateIds
       });
 
       return result;
@@ -363,7 +400,7 @@ class AppraisalService {
       const exportData = result.appraisals.map(appraisal => ({
         id: appraisal.id,
         employeeName: appraisal.employeeName,
-        employeeId: appraisal.employeeEmployeeId,
+        employee_id: appraisal.employeeEmployeeId,
         appraiserName: appraisal.appraiserName,
         appraiserId: appraisal.appraiserEmployeeId,
         periodStart: appraisal.periodStart,
@@ -385,21 +422,41 @@ class AppraisalService {
    * Create or get existing appraisal for a user
    * Used when saving the first form (Personal Info)
    */
-  static async createOrGetAppraisal(userId, managerId, periodStart, periodEnd) {
+  static async createOrGetAppraisal(user_id, manager_id, periodStart, periodEnd) {
     try {
-      // Check if appraisal already exists for this period
+      // First, check if user has any active appraisal (in-progress or submitted)
+      // If yes, update that one instead of creating new
+      const activeAppraisalQuery = `
+        SELECT id FROM appraisals 
+        WHERE employee_id = $1 
+        AND status IN ('in-progress', 'submitted')
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      const activeAppraisal = await pool.query(activeAppraisalQuery, [user_id])
+
+      if (activeAppraisal.rows.length > 0) {
+        // User has an active appraisal, return that ID
+        console.log(`Found active appraisal for user ${user_id}: ${activeAppraisal.rows[0].id}`)
+        return activeAppraisal.rows[0].id
+      }
+
+      // No active appraisal found
+      // Check if appraisal already exists for this specific period
       const existingQuery = `
         SELECT id FROM appraisals 
         WHERE employee_id = $1 AND period_start = $2 AND period_end = $3
         LIMIT 1
       `
-      const existing = await pool.query(existingQuery, [userId, periodStart, periodEnd])
+      const existing = await pool.query(existingQuery, [user_id, periodStart, periodEnd])
 
       if (existing.rows.length > 0) {
+        // Appraisal exists for this period (status is reviewed or completed)
         return existing.rows[0].id
       }
 
-      // Create new appraisal
+      // No active appraisal and no appraisal for this period
+      // Safe to create new appraisal
       const insertQuery = `
         INSERT INTO appraisals (
           employee_id, appraiser_id, period_start, period_end, status,
@@ -413,7 +470,8 @@ class AppraisalService {
         )
         RETURNING id
       `
-      const result = await pool.query(insertQuery, [userId, managerId, periodStart, periodEnd])
+      const result = await pool.query(insertQuery, [user_id, manager_id, periodStart, periodEnd])
+      console.log(`Created new appraisal for user ${user_id}: ${result.rows[0].id}`)
       return result.rows[0].id
     } catch (error) {
       console.error('Error creating/getting appraisal:', error)
@@ -511,8 +569,10 @@ class AppraisalService {
                 assessment_decision = $3, appraisee_comments = $4,
                 appraiser_signature = $5, appraiser_signature_date = $6,
                 appraisee_signature = $7, appraisee_signature_date = $8,
+                hod_comments = $9, hod_name = $10,
+                hod_signature = $11, hod_date = $12,
                 status = 'submitted', updated_at = CURRENT_TIMESTAMP 
-            WHERE id = $9
+            WHERE id = $13
           `
           values = [
             data.appraiserComments,
@@ -523,6 +583,10 @@ class AppraisalService {
             data.appraiserDate,
             data.appraiseeSignatureUrl,
             data.appraiseeDate,
+            data.hodComments,
+            data.hodName,
+            data.hodSignatureUrl,
+            data.hodDate,
             appraisalId
           ]
           break
@@ -542,19 +606,19 @@ class AppraisalService {
   /**
    * Submit appraisal by consolidating all form data
    */
-  static async submitAppraisal(userId) {
+  static async submitAppraisal(user_id) {
     try {
       // Fetch all required data from individual tables
       const [personalInfo, performancePlanning, midYearReview, endYearReview, annualAppraisal, finalSections] = await Promise.all([
-        pool.query('SELECT * FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId]),
-        pool.query('SELECT * FROM performance_planning WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId]),
-        pool.query('SELECT * FROM mid_year_review WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId]),
-        pool.query('SELECT * FROM end_year_review WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId]),
-        pool.query('SELECT * FROM annual_appraisal WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId]),
-        pool.query('SELECT * FROM final_sections WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [userId])
+        pool.query('SELECT * FROM personal_info WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id]),
+        pool.query('SELECT * FROM performance_planning WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id]),
+        pool.query('SELECT * FROM mid_year_review WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id]),
+        pool.query('SELECT * FROM end_year_review WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id]),
+        pool.query('SELECT * FROM annual_appraisal WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id]),
+        pool.query('SELECT * FROM final_sections WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [user_id])
       ])
 
-      console.log('User ID:', userId)
+      console.log('User ID:', user_id)
       console.log('Personal Info found:', personalInfo.rows.length)
       console.log('Performance Planning found:', performancePlanning.rows.length)
       console.log('Mid Year Review found:', midYearReview.rows.length)
@@ -571,24 +635,24 @@ class AppraisalService {
 
       // Validate required data with detailed error messages
       if (!pInfo) {
-        console.error('No personal info found for user:', userId)
+        console.error('No personal info found for user:', user_id)
         throw new AppError('Personal information is required. Please complete the Personal Info form first.', 400)
       }
       if (!pPlanning) {
-        console.error('No performance planning found for user:', userId)
+        console.error('No performance planning found for user:', user_id)
         throw new AppError('Performance planning is required. Please complete the Performance Planning form first.', 400)
       }
       if (!eReview) {
-        console.error('No end-year review found for user:', userId)
+        console.error('No end-year review found for user:', user_id)
         throw new AppError('End-year review is required. Please complete the End-Year Review form first.', 400)
       }
       // Annual appraisal is optional - only filled by appraiser/manager
       // if (!aAppraisal) {
-      //   console.error('No annual appraisal found for user:', userId)
+      //   console.error('No annual appraisal found for user:', user_id)
       //   throw new AppError('Annual appraisal is required. Please complete the Annual Appraisal form first.', 400)
       // }
       if (!fSections) {
-        console.error('No final sections found for user:', userId)
+        console.error('No final sections found for user:', user_id)
         throw new AppError('Final sections are required. Please complete the Final Sections form first.', 400)
       }
 
@@ -602,15 +666,16 @@ class AppraisalService {
           mid_year_review, end_of_year_review, core_competencies, non_core_competencies,
           overall_assessment, appraiser_comments, training_development_plan,
           assessment_decision, appraisee_comments, appraiser_signature,
-          appraiser_signature_date, appraisee_signature, appraisee_signature_date
+          appraiser_signature_date, appraisee_signature, appraisee_signature_date,
+          hod_comments, hod_name, hod_signature, hod_date
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
         )
         RETURNING *
       `
 
       const values = [
-        userId,
+        user_id,
         pInfo.manager_id,
         pInfo.period_from,
         pInfo.period_to,
@@ -670,7 +735,11 @@ class AppraisalService {
         fSections.appraiser_signature_url,
         fSections.appraiser_date,
         fSections.appraisee_signature_url,
-        fSections.appraisee_date
+        fSections.appraisee_date,
+        fSections.hod_comments,
+        fSections.hod_name,
+        fSections.hod_signature_url,
+        fSections.hod_date
       ]
 
       const result = await pool.query(insertQuery, values)
@@ -684,7 +753,7 @@ class AppraisalService {
   /**
    * Approve appraisal (manager only)
    */
-  static async approveAppraisal(appraisalId, managerId, comments = null) {
+  static async approveAppraisal(appraisalId, manager_id, comments = null) {
     try {
       const pool = require('../config/database')
 
@@ -712,7 +781,7 @@ class AppraisalService {
         WHERE id = $3
         RETURNING *
       `
-      const result = await pool.query(updateQuery, [comments, managerId, appraisalId])
+      const result = await pool.query(updateQuery, [comments, manager_id, appraisalId])
       return result.rows[0]
     } catch (error) {
       console.error('Error approving appraisal:', error)
@@ -723,7 +792,7 @@ class AppraisalService {
   /**
    * Reject appraisal (manager only)
    */
-  static async rejectAppraisal(appraisalId, managerId, comments) {
+  static async rejectAppraisal(appraisalId, manager_id, comments) {
     try {
       if (!comments || comments.trim() === '') {
         throw new AppError('Comments are required when rejecting an appraisal', 400)
@@ -754,7 +823,7 @@ class AppraisalService {
         WHERE id = $3
         RETURNING *
       `
-      const result = await pool.query(updateQuery, [comments, managerId, appraisalId])
+      const result = await pool.query(updateQuery, [comments, manager_id, appraisalId])
       return result.rows[0]
     } catch (error) {
       console.error('Error rejecting appraisal:', error)
@@ -765,7 +834,7 @@ class AppraisalService {
   /**
    * Complete appraisal (manager only) - Sets status to reviewed and deletes form records
    */
-  static async completeAppraisal(appraisalId, managerId) {
+  static async completeAppraisal(appraisalId, manager_id) {
     try {
       const pool = require('../config/database')
 
@@ -784,11 +853,12 @@ class AppraisalService {
       const appraisal = checkResult.rows[0]
 
       // Check if appraisal is in a state that can be completed
-      if (appraisal.status !== 'submitted') {
-        throw new AppError(`Cannot complete appraisal with status '${appraisal.status}'. Only 'submitted' appraisals can be completed.`, 400)
+      if (appraisal.status !== 'reviewed') {
+        throw new AppError(`Cannot complete appraisal with status '${appraisal.status}'. Only 'reviewed' appraisals can be completed.`, 400)
       }
 
-      const employeeId = appraisal.employee_id
+
+      const employee_id = appraisal.employee_id
 
       // Update appraisal status to 'reviewed'
       const updateQuery = `
@@ -802,7 +872,7 @@ class AppraisalService {
         WHERE id = $2
         RETURNING *
       `
-      const result = await pool.query(updateQuery, [managerId, appraisalId])
+      const result = await pool.query(updateQuery, [manager_id, appraisalId])
 
       // Delete form records for this appraisal
       await pool.query('DELETE FROM personal_info WHERE appraisal_id = $1', [appraisalId])

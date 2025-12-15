@@ -14,7 +14,7 @@ describe('Users Endpoints', () => {
         email: 'admin@tvet.gov.gh',
         password: 'admin123'
       });
-    
+
     adminToken = adminResponse.body.data.token;
 
     // Login as regular user
@@ -24,7 +24,7 @@ describe('Users Endpoints', () => {
         email: 'test@example.com',
         password: 'newpassword123'
       });
-    
+
     userToken = userResponse.body.data.token;
   });
 
@@ -95,7 +95,7 @@ describe('Users Endpoints', () => {
   describe('POST /api/users', () => {
     it('should create new user with admin token', async () => {
       const newUser = {
-        employeeId: 'TEST002',
+        employee_id: 'TEST002',
         email: 'test2@example.com',
         password: 'password123',
         name: 'Test User 2',
@@ -114,13 +114,13 @@ describe('Users Endpoints', () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      
+
       testUserId = response.body.data.id;
     });
 
     it('should not create user without admin privileges', async () => {
       const newUser = {
-        employeeId: 'TEST003',
+        employee_id: 'TEST003',
         email: 'test3@example.com',
         password: 'password123',
         name: 'Test User 3',

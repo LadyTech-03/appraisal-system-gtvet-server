@@ -28,6 +28,6 @@ router.put('/:id', PersonalInfoController.updatePersonalInfo);
 router.delete('/:id', requireManager, PersonalInfoController.deletePersonalInfo);
 
 // Get personal info by user ID
-router.get('/user/:userId', PersonalInfoController.getPersonalInfoByUserId);
+router.get('/user/:user_id', PersonalInfoController.getPersonalInfoByUserId);
 
 module.exports = router;

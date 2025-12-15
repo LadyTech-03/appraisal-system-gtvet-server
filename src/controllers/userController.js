@@ -18,9 +18,9 @@ class UserController {
 
   // Get user by ID
   static getUserById = catchAsync(async (req, res) => {
-    const userId = req.params.id;
+    const user_id = req.params.id;
 
-    const user = await UserService.getUserById(userId);
+    const user = await UserService.getUserById(user_id);
 
     res.status(200).json({
       success: true,
@@ -43,10 +43,10 @@ class UserController {
 
   // Update user
   static updateUser = catchAsync(async (req, res) => {
-    const userId = req.params.id;
+    const user_id = req.params.id;
     const updateData = req.body;
 
-    const user = await UserService.updateUser(userId, updateData);
+    const user = await UserService.updateUser(user_id, updateData);
 
     res.status(200).json({
       success: true,
@@ -57,9 +57,9 @@ class UserController {
 
   // Delete user
   static deleteUser = catchAsync(async (req, res) => {
-    const userId = req.params.id;
+    const user_id = req.params.id;
 
-    const result = await UserService.deleteUser(userId);
+    const result = await UserService.deleteUser(user_id);
 
     res.status(200).json({
       success: true,
@@ -120,9 +120,9 @@ class UserController {
 
   // Get user's team
   static getUserTeam = catchAsync(async (req, res) => {
-    const userId = req.params.id;
+    const user_id = req.params.id;
 
-    const team = await UserService.getUserTeam(userId);
+    const team = await UserService.getUserTeam(user_id);
 
     res.status(200).json({
       success: true,
@@ -132,9 +132,9 @@ class UserController {
 
   // Get user hierarchy
   static getUserHierarchy = catchAsync(async (req, res) => {
-    const userId = req.params.id;
+    const user_id = req.params.id;
 
-    const hierarchy = await UserService.getUserHierarchy(userId);
+    const hierarchy = await UserService.getUserHierarchy(user_id);
 
     res.status(200).json({
       success: true,
@@ -206,7 +206,7 @@ class UserController {
 
   // Upload signature
   static uploadSignature = catchAsync(async (req, res) => {
-    const userId = req.user.id;
+    const user_id = req.user.id;
 
     if (!req.file) {
       return res.status(400).json({
@@ -218,7 +218,7 @@ class UserController {
     const signatureUrl = req.file.url;
 
     // Update user profile with signature URL
-    const updatedUser = await UserService.updateUser(userId, { signature_url: signatureUrl });
+    const updatedUser = await UserService.updateUser(user_id, { signature_url: signatureUrl });
 
     res.status(200).json({
       success: true,

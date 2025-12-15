@@ -10,16 +10,16 @@ class AdminController {
   static getDashboardStats = catchAsync(async (req, res) => {
     const userStats = await UserService.getUserStatistics();
     const appraisalStats = await AppraisalService.getAppraisalStatistics();
-    
+
     // Get pending access requests
     const pendingRequests = await AccessRequest.findPending({ limit: 5 });
-    
+
     // Get recent training records
-    const recentTraining = await TrainingRecord.findAll({ 
-      limit: 5, 
-      page: 1 
+    const recentTraining = await TrainingRecord.findAll({
+      limit: 5,
+      page: 1
     });
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -30,20 +30,20 @@ class AdminController {
       }
     });
   });
-  
+
   // Get analytics data
   static getAnalytics = catchAsync(async (req, res) => {
     const { period = 'year' } = req.query;
-    
+
     // Get user statistics
     const userStats = await UserService.getUserStatistics();
-    
+
     // Get appraisal statistics
     const appraisalStats = await AppraisalService.getAppraisalStatistics();
-    
+
     // Get training statistics
     const { query } = require('../config/database');
-    
+
     const trainingStats = await query(`
       SELECT 
         COUNT(*) as total_training,
@@ -52,7 +52,7 @@ class AdminController {
         AVG(cost) as avg_cost
       FROM training_records
     `);
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -62,104 +62,104 @@ class AdminController {
       }
     });
   });
-  
+
   // Get all access requests
   static getAccessRequests = catchAsync(async (req, res) => {
     const options = req.query;
-    
+
     const result = await AccessRequest.findAll(options);
-    
+
     res.status(200).json({
       success: true,
       data: result
     });
   });
-  
+
   // Get access request by ID
   static getAccessRequestById = catchAsync(async (req, res) => {
     const requestId = req.params.id;
-    
+
     const request = await AccessRequest.findById(requestId);
-    
+
     if (!request) {
       return res.status(404).json({
         success: false,
         message: 'Access request not found'
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: request.toJSON()
     });
   });
-  
+
   // Approve access request
   static approveAccessRequest = catchAsync(async (req, res) => {
     const requestId = req.params.id;
     const { reviewNotes } = req.body;
     const reviewedBy = req.user.id;
-    
+
     const request = await AccessRequest.findById(requestId);
-    
+
     if (!request) {
       return res.status(404).json({
         success: false,
         message: 'Access request not found'
       });
     }
-    
+
     if (request.status !== 'pending') {
       return res.status(400).json({
         success: false,
         message: 'Access request has already been processed'
       });
     }
-    
+
     await request.approve(reviewedBy, reviewNotes);
-    
+
     res.status(200).json({
       success: true,
       message: 'Access request approved successfully',
       data: request.toJSON()
     });
   });
-  
+
   // Reject access request
   static rejectAccessRequest = catchAsync(async (req, res) => {
     const requestId = req.params.id;
     const { reviewNotes } = req.body;
     const reviewedBy = req.user.id;
-    
+
     const request = await AccessRequest.findById(requestId);
-    
+
     if (!request) {
       return res.status(404).json({
         success: false,
         message: 'Access request not found'
       });
     }
-    
+
     if (request.status !== 'pending') {
       return res.status(400).json({
         success: false,
         message: 'Access request has already been processed'
       });
     }
-    
+
     await request.reject(reviewedBy, reviewNotes);
-    
+
     res.status(200).json({
       success: true,
       message: 'Access request rejected successfully',
       data: request.toJSON()
     });
   });
-  
+
   // Get system logs
   static getSystemLogs = catchAsync(async (req, res) => {
     const { page = 1, limit = 50, level, startDate, endDate } = req.query;
-    
+
     // This would typically come from a logging system
     // For now, we'll return a mock response
     const logs = [
@@ -168,7 +168,7 @@ class AdminController {
         level: 'info',
         message: 'User logged in successfully',
         timestamp: new Date().toISOString(),
-        userId: 'user123',
+        user_id: 'user123',
         ip: '192.168.1.1'
       },
       {
@@ -176,11 +176,11 @@ class AdminController {
         level: 'warning',
         message: 'Failed login attempt',
         timestamp: new Date().toISOString(),
-        userId: null,
+        user_id: null,
         ip: '192.168.1.2'
       }
     ];
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -192,17 +192,17 @@ class AdminController {
       }
     });
   });
-  
+
   // Get system health
   static getSystemHealth = catchAsync(async (req, res) => {
     const { testConnection } = require('../database/connection');
-    
+
     // Test database connection
     const dbStatus = await testConnection();
-    
+
     // Get system metrics
     const { query } = require('../config/database');
-    
+
     const metrics = await query(`
       SELECT 
         (SELECT COUNT(*) FROM users WHERE is_active = true) as active_users,
@@ -210,7 +210,7 @@ class AdminController {
         (SELECT COUNT(*) FROM training_records) as total_training_records,
         (SELECT COUNT(*) FROM access_requests WHERE status = 'pending') as pending_requests
     `);
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -222,13 +222,13 @@ class AdminController {
       }
     });
   });
-  
+
   // Export system data
   static exportSystemData = catchAsync(async (req, res) => {
     const { type } = req.query;
-    
+
     let exportData = {};
-    
+
     switch (type) {
       case 'users':
         exportData = await UserService.exportUsers();
@@ -250,25 +250,25 @@ class AdminController {
           message: 'Invalid export type'
         });
     }
-    
+
     res.status(200).json({
       success: true,
       data: exportData
     });
   });
-  
+
   // Bulk operations
   static bulkOperations = catchAsync(async (req, res) => {
     const { operation, data } = req.body;
-    
+
     let result;
-    
+
     switch (operation) {
       case 'activate_users':
-        result = await UserService.bulkUpdateUsers(data.userIds, { isActive: true });
+        result = await UserService.bulkUpdateUsers(data.userIds, { is_active: true });
         break;
       case 'deactivate_users':
-        result = await UserService.bulkUpdateUsers(data.userIds, { isActive: false });
+        result = await UserService.bulkUpdateUsers(data.userIds, { is_active: false });
         break;
       case 'update_user_roles':
         result = await UserService.bulkUpdateUsers(data.userIds, { role: data.role });
@@ -279,7 +279,7 @@ class AdminController {
           message: 'Invalid bulk operation'
         });
     }
-    
+
     res.status(200).json({
       success: true,
       message: result.message,

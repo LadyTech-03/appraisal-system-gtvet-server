@@ -36,7 +36,7 @@ router.get('/overview/me', AppraisalController.getDashboardOverview);
 router.get('/export', requireManager, AppraisalController.bulkExportAppraisals);
 
 // Get appraisals by employee
-router.get('/employee/:employeeId',
+router.get('/employee/:employee_id',
   requireManager,
   validate(querySchemas.appraisalFilters, 'query'),
   AppraisalController.getAppraisalsByEmployee

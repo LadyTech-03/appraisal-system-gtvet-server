@@ -50,7 +50,7 @@ class KeyResultArea {
     if (result.rows.length === 0) return null;
 
     const kra = new KeyResultArea(result.rows[0]);
-    kra.employeeId = result.rows[0].employee_id;
+    kra.employee_id = result.rows[0].employee_id;
     kra.appraiserId = result.rows[0].appraiser_id;
     kra.employeeName = result.rows[0].employee_name;
 
@@ -126,7 +126,7 @@ class KeyResultArea {
 
     const kras = result.rows.map(row => {
       const kra = new KeyResultArea(row);
-      kra.employeeId = row.employee_id;
+      kra.employee_id = row.employee_id;
       kra.appraiserId = row.appraiser_id;
       kra.employeeName = row.employee_name;
       return kra;
@@ -235,7 +235,7 @@ class KeyResultArea {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       // Additional fields from joins
-      employeeId: this.employeeId,
+      employee_id: this.employee_id,
       appraiserId: this.appraiserId,
       employeeName: this.employeeName
     };

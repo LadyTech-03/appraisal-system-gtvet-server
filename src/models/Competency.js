@@ -49,7 +49,7 @@ class Competency {
     if (result.rows.length === 0) return null;
 
     const competency = new Competency(result.rows[0]);
-    competency.employeeId = result.rows[0].employee_id;
+    competency.employee_id = result.rows[0].employee_id;
     competency.appraiserId = result.rows[0].appraiser_id;
     competency.employeeName = result.rows[0].employee_name;
 
@@ -143,7 +143,7 @@ class Competency {
 
     const competencies = result.rows.map(row => {
       const competency = new Competency(row);
-      competency.employeeId = row.employee_id;
+      competency.employee_id = row.employee_id;
       competency.appraiserId = row.appraiser_id;
       competency.employeeName = row.employee_name;
       return competency;
@@ -249,7 +249,7 @@ class Competency {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       // Additional fields from joins
-      employeeId: this.employeeId,
+      employee_id: this.employee_id,
       appraiserId: this.appraiserId,
       employeeName: this.employeeName
     };

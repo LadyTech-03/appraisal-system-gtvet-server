@@ -3,7 +3,7 @@ const { query } = require('../config/database');
 class TrainingRecord {
   constructor(data) {
     this.id = data.id;
-    this.userId = data.user_id;
+    this.user_id = data.user_id;
     this.institution = data.institution;
     this.programme = data.programme;
     this.startDate = data.start_date;
@@ -21,7 +21,7 @@ class TrainingRecord {
   // Create a new training record
   static async create(trainingData) {
     const {
-      userId,
+      user_id,
       institution,
       programme,
       startDate,
@@ -41,7 +41,7 @@ class TrainingRecord {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
-      userId, institution, programme, startDate, endDate,
+      user_id, institution, programme, startDate, endDate,
       durationHours, cost, fundingSource, status, certificateUrl, notes
     ]);
 
@@ -61,7 +61,7 @@ class TrainingRecord {
 
     const trainingRecord = new TrainingRecord(result.rows[0]);
     trainingRecord.userName = result.rows[0].user_name;
-    trainingRecord.employeeId = result.rows[0].employee_id;
+    trainingRecord.employee_id = result.rows[0].employee_id;
 
     return trainingRecord;
   }
@@ -71,7 +71,7 @@ class TrainingRecord {
     const {
       page = 1,
       limit = 10,
-      userId,
+      user_id,
       status,
       institution,
       startDate,
@@ -83,10 +83,10 @@ class TrainingRecord {
     const params = [];
     let paramCount = 0;
 
-    if (userId) {
+    if (user_id) {
       paramCount++;
       whereClause += ` AND tr.user_id = $${paramCount}`;
-      params.push(userId);
+      params.push(user_id);
     }
 
     if (status) {
@@ -144,7 +144,7 @@ class TrainingRecord {
     const trainingRecords = result.rows.map(row => {
       const trainingRecord = new TrainingRecord(row);
       trainingRecord.userName = row.user_name;
-      trainingRecord.employeeId = row.employee_id;
+      trainingRecord.employee_id = row.employee_id;
       return trainingRecord;
     });
 
@@ -158,8 +158,8 @@ class TrainingRecord {
   }
 
   // Get training records by user ID
-  static async findByUserId(userId, options = {}) {
-    return await this.findAll({ ...options, userId });
+  static async findByUserId(user_id, options = {}) {
+    return await this.findAll({ ...options, user_id });
   }
 
   // Get training records by status
@@ -236,7 +236,7 @@ class TrainingRecord {
   toJSON() {
     return {
       id: this.id,
-      userId: this.userId,
+      user_id: this.user_id,
       institution: this.institution,
       programme: this.programme,
       startDate: this.startDate,
@@ -251,7 +251,7 @@ class TrainingRecord {
       updatedAt: this.updatedAt,
       // Additional fields from joins
       userName: this.userName,
-      employeeId: this.employeeId
+      employee_id: this.employee_id
     };
   }
 }
