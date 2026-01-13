@@ -160,6 +160,7 @@ app.use('/api/mid-year-review', midYearReviewRoutes);
 app.use('/api/end-year-review', endYearReviewRoutes);
 app.use('/api/annual-appraisal', annualAppraisalRoutes);
 app.use('/api/final-sections', finalSectionsRoutes);
+app.use('/api/appraisal-periods', require('./routes/appraisalPeriods'));
 
 // Root endpoint
 app.get('/', (req, res) => {

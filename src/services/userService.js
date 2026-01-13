@@ -44,10 +44,16 @@ class UserService {
         throw new AppError('User with this employee ID already exists', 400);
       }
 
-      // Create new user
+      // Create new user (OTP is generated automatically if no password provided)
       const user = await User.create(userData);
 
-      return user.toJSON();
+      // Return user data with temp_password for admin to share
+      const response = user.toJSON();
+      if (user._tempPasswordPlain) {
+        response.temp_password = user._tempPasswordPlain;
+      }
+
+      return response;
     } catch (error) {
       throw error;
     }

@@ -26,16 +26,24 @@ class User {
     this.signature_url = data.signature_url;
     this.is_active = data.is_active;
     this.last_login = data.last_login;
+    this.password_change_required = data.password_change_required;
+    this.temp_password = data.temp_password;
+    this.temp_password_created_at = data.temp_password_created_at;
     this.created_at = data.created_at;
     this.updated_at = data.updated_at;
   }
 
-  // Create a new user
+  // Generate 6-digit OTP
+  static generateOTP() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Create a new user with OTP-based temporary password
   static async create(userData) {
     const {
       employee_id,
       email,
-      password,
+      password, // Optional - if not provided, generate OTP
       title,
       first_name,
       surname,
@@ -53,23 +61,32 @@ class User {
       phone
     } = userData;
 
-    // Hash password
-    const password_hash = await bcrypt.hash(password, 10);
+    // Generate OTP if no password provided
+    const tempPassword = password || this.generateOTP();
+    const passwordChangeRequired = !password; // Require change if using OTP
+
+    // Hash password (either provided or OTP)
+    const password_hash = await bcrypt.hash(tempPassword, 10);
 
     const result = await query(`
       INSERT INTO users (
         employee_id, email, password_hash, title, first_name, surname,
         other_title, other_names, gender, appointment_date, role, division, 
-        unit, position, grade, notch, manager_id, phone
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        unit, position, grade, notch, manager_id, phone,
+        password_change_required, temp_password, temp_password_created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *
     `, [
       employee_id, email, password_hash, title, first_name, surname,
       other_title, other_names, gender, appointment_date, role, division,
-      unit, position, grade, notch, manager_id, phone
+      unit, position, grade, notch, manager_id, phone,
+      passwordChangeRequired, passwordChangeRequired ? tempPassword : null, passwordChangeRequired ? new Date() : null
     ]);
 
-    return new User(result.rows[0]);
+    const user = new User(result.rows[0]);
+    // Attach the plain OTP for admin to see (not stored in user object normally)
+    user._tempPasswordPlain = passwordChangeRequired ? tempPassword : null;
+    return user;
   }
 
   // Find user by ID
@@ -267,6 +284,27 @@ class User {
     return this;
   }
 
+  // Set new password and clear password change requirement
+  async setPassword(newPassword) {
+    const password_hash = await bcrypt.hash(newPassword, 10);
+
+    await query(`
+      UPDATE users 
+      SET password_hash = $1, 
+          password_change_required = false, 
+          temp_password = NULL, 
+          temp_password_created_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `, [password_hash, this.id]);
+
+    this.password_hash = password_hash;
+    this.password_change_required = false;
+    this.temp_password = null;
+    this.temp_password_created_at = null;
+    return this;
+  }
+
   // Get user data for API response (without sensitive info)
   toJSON() {
     return {
@@ -311,7 +349,8 @@ class User {
       role: this.role,
       manager_id: this.manager_id,
       avatar_url: this.avatar_url,
-      signature_url: this.signature_url
+      signature_url: this.signature_url,
+      password_change_required: this.password_change_required
     };
   }
 }

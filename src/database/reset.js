@@ -21,7 +21,8 @@ const dropTables = async () => {
       'migrations',
       'seeders',
       'final_sections',
-      'training_records'
+      'training_records',
+      'appraisal_periods'
     ];
     
     for (const table of tables) {

@@ -36,40 +36,61 @@ const userSchemas = {
       'string.empty': 'Email is required',
       'any.required': 'Email is required'
     }),
-    password: Joi.string().min(6).required().messages({
-      'string.min': 'Password must be at least 6 characters long',
-      'string.empty': 'Password is required',
-      'any.required': 'Password is required'
+    // Password is optional - if not provided, OTP will be auto-generated
+    password: Joi.string().min(6).allow('').optional().messages({
+      'string.min': 'Password must be at least 6 characters long'
     }),
-    name: Joi.string().required().messages({
-      'string.empty': 'Name is required',
-      'any.required': 'Name is required'
+    // Personal information fields (replacing single 'name' field)
+    title: Joi.string().required().messages({
+      'string.empty': 'Title is required',
+      'any.required': 'Title is required'
     }),
+    first_name: Joi.string().required().messages({
+      'string.empty': 'First name is required',
+      'any.required': 'First name is required'
+    }),
+    surname: Joi.string().required().messages({
+      'string.empty': 'Surname is required',
+      'any.required': 'Surname is required'
+    }),
+    other_names: Joi.string().allow('', null),
+    gender: Joi.string().required().messages({
+      'string.empty': 'Gender is required',
+      'any.required': 'Gender is required'
+    }),
+    appointment_date: Joi.date().allow('', null),
+    notch: Joi.string().allow('', null),
     role: Joi.string().valid(...ROLE_VALUES).required().messages({
       'any.only': `Invalid role. Valid roles: ${ROLE_VALUES.join(', ')}`,
       'any.required': 'Role is required'
     }),
-    division: Joi.string().allow(''),
-    unit: Joi.string().allow(null),
-    position: Joi.string().allow(null),
-    grade: Joi.string().allow(null),
-    manager_id: Joi.string().uuid().allow(null),
-    phone: Joi.string().allow(null)
+    division: Joi.string().allow('', null),
+    unit: Joi.string().allow('', null),
+    position: Joi.string().allow('', null),
+    grade: Joi.string().allow('', null),
+    manager_id: Joi.string().uuid().allow('', null),
+    phone: Joi.string().allow('', null)
   }),
 
   update: Joi.object({
     employee_id: Joi.string(),
     email: Joi.string().email(),
-    name: Joi.string(),
+    title: Joi.string().allow('', null),
+    first_name: Joi.string(),
+    surname: Joi.string(),
+    other_names: Joi.string().allow('', null),
+    gender: Joi.string(),
+    appointment_date: Joi.date().allow('', null),
+    notch: Joi.string().allow('', null),
     role: Joi.string().valid(...ROLE_VALUES).messages({
       'any.only': `Invalid role. Valid roles: ${ROLE_VALUES.join(', ')}`
     }),
-    division: Joi.string().allow(null),
-    unit: Joi.string().allow(null),
-    position: Joi.string().allow(null),
-    grade: Joi.string().allow(null),
-    manager_id: Joi.string().uuid().allow(null),
-    phone: Joi.string().allow(null),
+    division: Joi.string().allow('', null),
+    unit: Joi.string().allow('', null),
+    position: Joi.string().allow('', null),
+    grade: Joi.string().allow('', null),
+    manager_id: Joi.string().uuid().allow('', null),
+    phone: Joi.string().allow('', null),
     is_active: Joi.boolean()
   }),
 

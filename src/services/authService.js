@@ -82,7 +82,7 @@ class AuthService {
     }
   }
 
-  // Change password
+  // Change password (also handles first-time password change after OTP login)
   static async changePassword(user_id, currentPassword, newPassword) {
     try {
       const user = await User.findById(user_id);
@@ -91,18 +91,19 @@ class AuthService {
         throw new AppError('User not found', 404);
       }
 
-      // Verify current password
+      // Verify current password (or OTP)
       const isCurrentPasswordValid = await user.verifyPassword(currentPassword);
 
       if (!isCurrentPasswordValid) {
         throw new AppError('Current password is incorrect', 400);
       }
 
-      // Update password
-      await user.updatePassword(newPassword);
+      // Update password and clear password_change_required flag
+      await user.setPassword(newPassword);
 
       return {
-        message: 'Password changed successfully'
+        message: 'Password changed successfully',
+        password_change_required: false
       };
     } catch (error) {
       throw error;
