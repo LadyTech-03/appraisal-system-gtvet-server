@@ -38,6 +38,9 @@ router.get('/current', AppraisalController.getCurrentAppraisal);
 // Update manager's current step when reviewing an employee's appraisal
 router.post('/manager-step', requireManager, AppraisalController.updateManagerStep);
 
+// Get form lock status for user's appraisal
+router.get('/lock-status', AppraisalController.getFormLockStatus);
+
 // Export appraisals
 router.get('/export', requireManager, AppraisalController.bulkExportAppraisals);
 

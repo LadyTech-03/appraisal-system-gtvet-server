@@ -73,6 +73,17 @@ class AnnualAppraisalService {
     }
 
     static async updateAnnualAppraisal(id, data) {
+        // Check if form is locked first
+        const recordQuery = 'SELECT appraisal_id FROM annual_appraisal WHERE id = $1';
+        const recordResult = await pool.query(recordQuery, [id]);
+        if (recordResult.rows.length > 0 && recordResult.rows[0].appraisal_id) {
+            const lockQuery = 'SELECT annual_appraisal_locked FROM appraisals WHERE id = $1';
+            const lockResult = await pool.query(lockQuery, [recordResult.rows[0].appraisal_id]);
+            if (lockResult.rows.length > 0 && lockResult.rows[0].annual_appraisal_locked) {
+                throw new ValidationError('Annual Appraisal form is locked and cannot be modified');
+            }
+        }
+
         const {
             coreCompetencies,
             nonCoreCompetencies,

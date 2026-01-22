@@ -31,6 +31,19 @@ class Appraisal {
     this.appraiseeSignature = data.appraisee_signature;
     this.currentStep = data.current_step;
     this.managerCurrentStep = data.manager_current_step;
+    // Lock fields
+    this.personalInfoLocked = data.personal_info_locked;
+    this.performancePlanningLocked = data.performance_planning_locked;
+    this.midYearReviewLocked = data.mid_year_review_locked;
+    this.endYearReviewLocked = data.end_year_review_locked;
+    this.finalSectionsLocked = data.final_sections_locked;
+    this.annualAppraisalLocked = data.annual_appraisal_locked;
+    this.personalInfoLockedAt = data.personal_info_locked_at;
+    this.performancePlanningLockedAt = data.performance_planning_locked_at;
+    this.midYearReviewLockedAt = data.mid_year_review_locked_at;
+    this.endYearReviewLockedAt = data.end_year_review_locked_at;
+    this.finalSectionsLockedAt = data.final_sections_locked_at;
+    this.annualAppraisalLockedAt = data.annual_appraisal_locked_at;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }
@@ -215,7 +228,12 @@ class Appraisal {
       'appraiser_comments', 'training_development_plan', 'assessment_decision',
       'appraisee_comments', 'hod_comments', 'hod_name', 'hod_signature',
       'hod_date', 'appraiser_signature', 'appraiser_signature_date',
-      'appraisee_signature', 'appraisee_signature_date'
+      'appraisee_signature', 'appraisee_signature_date',
+      // Lock fields
+      'personal_info_locked', 'performance_planning_locked', 'mid_year_review_locked',
+      'end_year_review_locked', 'final_sections_locked', 'annual_appraisal_locked',
+      'personal_info_locked_at', 'performance_planning_locked_at', 'mid_year_review_locked_at',
+      'end_year_review_locked_at', 'final_sections_locked_at', 'annual_appraisal_locked_at'
     ];
 
     const updates = [];
@@ -344,6 +362,19 @@ class Appraisal {
       appraiseeSignature: this.appraiseeSignature,
       currentStep: this.currentStep,
       managerCurrentStep: this.managerCurrentStep,
+      // Lock status
+      personalInfoLocked: this.personalInfoLocked,
+      performancePlanningLocked: this.performancePlanningLocked,
+      midYearReviewLocked: this.midYearReviewLocked,
+      endYearReviewLocked: this.endYearReviewLocked,
+      finalSectionsLocked: this.finalSectionsLocked,
+      annualAppraisalLocked: this.annualAppraisalLocked,
+      personalInfoLockedAt: this.personalInfoLockedAt,
+      performancePlanningLockedAt: this.performancePlanningLockedAt,
+      midYearReviewLockedAt: this.midYearReviewLockedAt,
+      endYearReviewLockedAt: this.endYearReviewLockedAt,
+      finalSectionsLockedAt: this.finalSectionsLockedAt,
+      annualAppraisalLockedAt: this.annualAppraisalLockedAt,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       // Additional fields from joins

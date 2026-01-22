@@ -366,7 +366,7 @@ class AppraisalService {
           SELECT id, manager_current_step, status, period_start, period_end, created_at, updated_at
           FROM appraisals 
           WHERE employee_id = $1 
-          AND status IN ('in-progress', 'submitted')
+          AND status IN ('in-progress', 'submitted', 'reviewed')
           ORDER BY created_at DESC
           LIMIT 1
         `, [employeeId]);
@@ -392,7 +392,7 @@ class AppraisalService {
         SELECT id, current_step, status, period_start, period_end, created_at, updated_at
         FROM appraisals 
         WHERE employee_id = $1 
-        AND status = 'in-progress'
+        AND status IN ('in-progress', 'submitted', 'reviewed')
         ORDER BY created_at DESC
         LIMIT 1
       `, [userId]);
@@ -468,6 +468,88 @@ class AppraisalService {
     } catch (error) {
       console.error('Error updating manager current step:', error);
       // Don't throw - this is a non-critical operation
+    }
+  }
+
+  /**
+   * Get the lock status for all forms of a user's appraisal
+   * @param {number} userId - The user ID
+   * @returns {object} Lock status for each form section
+   */
+  static async getFormLockStatus(userId) {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          id,
+          personal_info_locked,
+          performance_planning_locked,
+          mid_year_review_locked,
+          end_year_review_locked,
+          final_sections_locked,
+          annual_appraisal_locked,
+          personal_info_locked_at,
+          performance_planning_locked_at,
+          mid_year_review_locked_at,
+          end_year_review_locked_at,
+          final_sections_locked_at,
+          annual_appraisal_locked_at
+        FROM appraisals 
+        WHERE employee_id = $1 
+        AND status IN ('in-progress', 'submitted', 'reviewed')
+        ORDER BY created_at DESC
+        LIMIT 1
+      `, [userId]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        appraisalId: row.id,
+        personalInfo: { locked: row.personal_info_locked, lockedAt: row.personal_info_locked_at },
+        performancePlanning: { locked: row.performance_planning_locked, lockedAt: row.performance_planning_locked_at },
+        midYearReview: { locked: row.mid_year_review_locked, lockedAt: row.mid_year_review_locked_at },
+        endYearReview: { locked: row.end_year_review_locked, lockedAt: row.end_year_review_locked_at },
+        finalSections: { locked: row.final_sections_locked, lockedAt: row.final_sections_locked_at },
+        annualAppraisal: { locked: row.annual_appraisal_locked, lockedAt: row.annual_appraisal_locked_at }
+      };
+    } catch (error) {
+      console.error('Error getting form lock status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lock specific forms for an appraisal
+   * @param {number} appraisalId - The appraisal ID
+   * @param {string[]} formNames - Array of form names to lock (e.g., ['personal_info', 'performance_planning'])
+   */
+  static async lockForms(appraisalId, formNames) {
+    try {
+      const validForms = ['personal_info', 'performance_planning', 'mid_year_review', 'end_year_review', 'final_sections', 'annual_appraisal'];
+      const formsToLock = formNames.filter(f => validForms.includes(f));
+
+      if (formsToLock.length === 0) {
+        console.error('No valid forms to lock');
+        return;
+      }
+
+      // Build dynamic SET clause
+      const setClauses = formsToLock.map(form =>
+        `${form}_locked = TRUE, ${form}_locked_at = CURRENT_TIMESTAMP`
+      ).join(', ');
+
+      await pool.query(`
+        UPDATE appraisals 
+        SET ${setClauses}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+      `, [appraisalId]);
+
+      console.log(`Locked forms [${formsToLock.join(', ')}] for appraisal ${appraisalId}`);
+    } catch (error) {
+      console.error('Error locking forms:', error);
+      throw error;
     }
   }
 

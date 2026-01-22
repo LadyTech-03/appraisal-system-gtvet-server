@@ -211,6 +211,24 @@ class FinalSectionsService {
             await AppraisalService.updateAppraisalSection(finalSections.appraisal_id, 'final_sections', data);
         }
 
+        // Check if all required fields are present to lock annual_appraisal
+        // Required: appraiser_comments, assessment_decision, career_development_comments, appraisee_comments
+        const hasAllRequiredFields =
+            finalSections.appraiser_comments &&
+            finalSections.assessment_decision &&
+            finalSections.career_development_comments &&
+            finalSections.appraisee_comments;
+
+        if (hasAllRequiredFields && finalSections.appraisal_id) {
+            try {
+                await AppraisalService.lockForms(finalSections.appraisal_id, ['annual_appraisal', 'final_sections']);
+                console.log('Annual Appraisal form locked after all required fields completed');
+            } catch (lockError) {
+                console.error('Error locking annual appraisal form:', lockError);
+                // Don't fail the main operation if locking fails
+            }
+        }
+
         return finalSections;
     }
 

@@ -192,6 +192,18 @@ class AppraisalController {
     });
   });
 
+  // Get form lock status for user's appraisal
+  static getFormLockStatus = catchAsync(async (req, res) => {
+    const userId = req.query.userId || req.user.id;
+
+    const lockStatus = await AppraisalService.getFormLockStatus(userId);
+
+    res.status(200).json({
+      success: true,
+      data: lockStatus
+    });
+  });
+
   // Get team appraisals
   static getTeamAppraisals = catchAsync(async (req, res) => {
     const manager_id = req.user.id;

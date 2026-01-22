@@ -95,6 +95,17 @@ class PerformancePlanningService {
     }
 
     static async updatePerformancePlanning(id, data) {
+        // Check if form is locked first
+        const recordQuery = 'SELECT appraisal_id FROM performance_planning WHERE id = $1';
+        const recordResult = await pool.query(recordQuery, [id]);
+        if (recordResult.rows.length > 0 && recordResult.rows[0].appraisal_id) {
+            const lockQuery = 'SELECT performance_planning_locked FROM appraisals WHERE id = $1';
+            const lockResult = await pool.query(lockQuery, [recordResult.rows[0].appraisal_id]);
+            if (lockResult.rows.length > 0 && lockResult.rows[0].performance_planning_locked) {
+                throw new ValidationError('Performance Planning form is locked and cannot be modified');
+            }
+        }
+
         const { keyResultAreas, keyCompetencies, appraiseeSignatureUrl, appraiserSignatureUrl } = data;
 
         // Build dynamic update query
@@ -151,6 +162,19 @@ class PerformancePlanningService {
         // Update appraisal table
         if (performancePlanning.appraisal_id && keyResultAreas) {
             await AppraisalService.updateAppraisalSection(performancePlanning.appraisal_id, 'key_result_areas', keyResultAreas);
+        }
+
+        // Check if both signatures are present - if so, lock personal_info and performance_planning
+        const hasBothSignatures = performancePlanning.appraisee_signature_url && performancePlanning.appraiser_signature_url;
+
+        if (hasBothSignatures && performancePlanning.appraisal_id) {
+            try {
+                await AppraisalService.lockForms(performancePlanning.appraisal_id, ['personal_info', 'performance_planning']);
+                console.log('Performance Planning and Personal Info forms locked after both signatures collected');
+            } catch (lockError) {
+                console.error('Error locking forms:', lockError);
+                // Don't fail the main operation if locking fails
+            }
         }
 
         return performancePlanning;

@@ -125,6 +125,17 @@ class PersonalInfoService {
      * Update existing personal info
      */
     static async updatePersonalInfo(id, personalInfoData) {
+        // Check if form is locked first
+        const recordQuery = 'SELECT appraisal_id FROM personal_info WHERE id = $1';
+        const recordResult = await pool.query(recordQuery, [id]);
+        if (recordResult.rows.length > 0 && recordResult.rows[0].appraisal_id) {
+            const lockQuery = 'SELECT personal_info_locked FROM appraisals WHERE id = $1';
+            const lockResult = await pool.query(lockQuery, [recordResult.rows[0].appraisal_id]);
+            if (lockResult.rows.length > 0 && lockResult.rows[0].personal_info_locked) {
+                throw new ValidationError('Personal Information form is locked and cannot be modified');
+            }
+        }
+
         const {
             periodFrom,
             periodTo,

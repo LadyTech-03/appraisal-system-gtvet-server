@@ -54,6 +54,17 @@ class MidYearReviewService {
     }
 
     static async updateMidYearReview(id, data) {
+        // Check if form is locked first
+        const recordQuery = 'SELECT appraisal_id FROM mid_year_review WHERE id = $1';
+        const recordResult = await pool.query(recordQuery, [id]);
+        if (recordResult.rows.length > 0 && recordResult.rows[0].appraisal_id) {
+            const lockQuery = 'SELECT mid_year_review_locked FROM appraisals WHERE id = $1';
+            const lockResult = await pool.query(lockQuery, [recordResult.rows[0].appraisal_id]);
+            if (lockResult.rows.length > 0 && lockResult.rows[0].mid_year_review_locked) {
+                throw new ValidationError('Mid-Year Review form is locked and cannot be modified');
+            }
+        }
+
         const { targets, competencies, appraiseeSignatureUrl, appraiseeDate, appraiserSignatureUrl, appraiserDate } = data;
 
         // Build dynamic update query
@@ -176,6 +187,19 @@ class MidYearReviewService {
 
         // Update current step to end-year-review
         await AppraisalService.updateCurrentStep(midYearReview.user_id, 'end-year-review');
+
+        // Check if both signatures are present - if so, lock mid_year_review
+        const hasBothSignatures = midYearReview.appraisee_signature_url && midYearReview.appraiser_signature_url;
+
+        if (hasBothSignatures && midYearReview.appraisal_id) {
+            try {
+                await AppraisalService.lockForms(midYearReview.appraisal_id, ['mid_year_review']);
+                console.log('Mid-Year Review and Performance Planning forms locked after both signatures collected');
+            } catch (lockError) {
+                console.error('Error locking forms:', lockError);
+                // Don't fail the main operation if locking fails
+            }
+        }
 
         return midYearReview;
     }
