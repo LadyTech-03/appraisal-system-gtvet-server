@@ -146,7 +146,7 @@ class MidYearReviewService {
                     id: (index + 1).toString(),
                     target: target.description || "",
                     performanceAssessment: "",
-                    weightOfTarget: 5,
+                    weightOfTarget: 0.6,
                     score: 0,
                     comments: ""
                 }));
@@ -173,6 +173,9 @@ class MidYearReviewService {
             console.error('Error auto-creating end-of-year review:', endYearError);
             // Don't fail the whole operation if end-year creation fails
         }
+
+        // Update current step to end-year-review
+        await AppraisalService.updateCurrentStep(midYearReview.user_id, 'end-year-review');
 
         return midYearReview;
     }

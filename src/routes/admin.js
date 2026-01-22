@@ -11,6 +11,9 @@ router.use(requireAdmin);
 router.get('/dashboard', AdminController.getDashboardStats);
 router.get('/analytics', AdminController.getAnalytics);
 
+// Resetting system
+router.post('/database/reset', AdminController.resetDatabase);
+
 // System management
 router.get('/health', AdminController.getSystemHealth);
 router.get('/logs', AdminController.getSystemLogs);

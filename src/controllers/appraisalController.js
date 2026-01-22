@@ -158,12 +158,37 @@ class AppraisalController {
   });
 
   static getDashboardOverview = catchAsync(async (req, res) => {
-    console.log(req.user, 'I got here');
     const overview = await AppraisalService.getDashboardOverview(req.user);
 
     res.status(200).json({
       success: true,
       data: overview
+    });
+  });
+
+  // Get current in-progress appraisal for the logged-in user
+  // Query params: role=manager&employeeId=xxx for manager view
+  static getCurrentAppraisal = catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    const { role, employeeId } = req.query;
+
+    const appraisal = await AppraisalService.getCurrentAppraisal(userId, { role, employeeId });
+
+    res.status(200).json({
+      success: true,
+      data: appraisal
+    });
+  });
+
+  // Update manager's current step when reviewing an employee's appraisal
+  static updateManagerStep = catchAsync(async (req, res) => {
+    const { employeeId, step } = req.body;
+
+    await AppraisalService.updateManagerCurrentStep(employeeId, step);
+
+    res.status(200).json({
+      success: true,
+      message: 'Manager step updated successfully'
     });
   });
 

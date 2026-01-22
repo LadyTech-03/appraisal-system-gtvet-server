@@ -286,6 +286,48 @@ class AdminController {
       data: result.updatedUsers
     });
   });
+
+  // Add this method to your AdminController class
+  static resetDatabase = catchAsync(async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        message: 'Database reset is not allowed in production'
+      });
+    }
+
+    const { exec } = require('child_process');
+    const util = require('util');
+    const path = require('path');
+    const fs = require('fs').promises;
+    const execPromise = util.promisify(exec);
+
+    console.log('Starting database reset...');
+    await execPromise('npm run reset');
+    
+    console.log('Running migrations...');
+    await execPromise('npm run migrate');
+    
+    console.log('Seeding database...');
+    await execPromise('npm run seed');
+
+    console.log('Clearing signatures folder...');
+    const signaturesPath = path.join(__dirname, '../uploads/signatures');
+    try {
+      const files = await fs.readdir(signaturesPath);
+      for (const file of files) {
+        await fs.unlink(path.join(signaturesPath, file));
+      }
+    console.log('Signatures folder cleared.');
+    } catch (err) {
+      console.error('Error clearing signatures folder:', err);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Database reset completed successfully'
+    });
+  });
 }
 
 module.exports = AdminController;

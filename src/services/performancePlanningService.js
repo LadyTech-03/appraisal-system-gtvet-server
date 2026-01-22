@@ -88,6 +88,9 @@ class PerformancePlanningService {
             // Don't fail the whole operation if mid-year creation fails
         }
 
+        // Update current step to mid-year-review
+        await AppraisalService.updateCurrentStep(user_id, 'mid-year-review');
+
         return performancePlanning;
     }
 

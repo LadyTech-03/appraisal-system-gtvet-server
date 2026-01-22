@@ -4,9 +4,9 @@ const { catchAsync } = require('../middleware/errorHandler');
 class AuthController {
   // Login user
   static login = catchAsync(async (req, res) => {
-    const { email, password } = req.body;
+    const { employee_id, password } = req.body;
 
-    const result = await AuthService.login(email, password);
+    const result = await AuthService.login(employee_id, password);
 
     res.status(200).json({
       success: true,

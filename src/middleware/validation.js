@@ -110,10 +110,14 @@ const userSchemas = {
 // Authentication validation schemas
 const authSchemas = {
   login: Joi.object({
-    email: Joi.string().email().required().messages({
-      'string.email': 'Please provide a valid email address',
-      'string.empty': 'Email is required',
-      'any.required': 'Email is required'
+    // email: Joi.string().email().required().messages({
+    //   'string.email': 'Please provide a valid email address',
+    //   'string.empty': 'Email is required',
+    //   'any.required': 'Email is required'
+    // }),
+    employee_id: Joi.string().required().messages({
+      'string.empty': 'Employee ID is required',
+      'any.required': 'Employee ID is required'
     }),
     password: Joi.string().required().messages({
       'string.empty': 'Password is required',

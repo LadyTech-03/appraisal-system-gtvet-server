@@ -131,6 +131,9 @@ class EndYearReviewService {
             });
         }
 
+        // Update current step to final-sections
+        await AppraisalService.updateCurrentStep(endYearReview.user_id, 'final-sections');
+
         return endYearReview;
     }
 

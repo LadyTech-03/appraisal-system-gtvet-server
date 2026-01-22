@@ -15,9 +15,9 @@ CREATE INDEX IF NOT EXISTS idx_appraisal_periods_section ON appraisal_periods(se
 
 -- Seed initial data - Initially only personal_info and performance_planning are available
 INSERT INTO appraisal_periods (section_name, is_available, message) VALUES
-('personal_info', false, 'Personal Information form is not available for completion.'),
-('performance_planning', false, 'Performance Planning form is not available for completion.'),
-('mid_year_review', false, 'Mid-Year Review will be available in July. Please check back later.'),
-('end_year_review', false, 'End of Year Review will be available at the end of the year. Please check back later.'),
-('final_sections', false, 'Final Sections will be available after all reviews are completed.')
+('personal_info', false, 'This form is not available at this moment.'),
+('performance_planning', false, 'This form is not available at this moment.'),
+('mid_year_review', false, 'This form is not available at this moment.'),
+('end_year_review', false, 'This form is not available at this moment.'),
+('final_sections', false, 'This form is not available at this moment.')
 ON CONFLICT (section_name) DO NOTHING;

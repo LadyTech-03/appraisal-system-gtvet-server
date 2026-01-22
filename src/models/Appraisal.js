@@ -29,6 +29,8 @@ class Appraisal {
     this.appraiserSignature = data.appraiser_signature;
     this.appraiserSignatureDate = data.appraiser_signature_date;
     this.appraiseeSignature = data.appraisee_signature;
+    this.currentStep = data.current_step;
+    this.managerCurrentStep = data.manager_current_step;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
   }
@@ -207,7 +209,7 @@ class Appraisal {
   // Update appraisal
   async update(updateData) {
     const allowedFields = [
-      'status', 'employee_info', 'appraiser_info', 'training_received',
+      'status', 'current_step', 'manager_current_step', 'employee_info', 'appraiser_info', 'training_received',
       'key_result_areas', 'mid_year_review', 'end_of_year_review',
       'core_competencies', 'non_core_competencies', 'overall_assessment',
       'appraiser_comments', 'training_development_plan', 'assessment_decision',
@@ -340,6 +342,8 @@ class Appraisal {
       appraiserSignature: this.appraiserSignature,
       appraiserSignatureDate: this.appraiserSignatureDate,
       appraiseeSignature: this.appraiseeSignature,
+      currentStep: this.currentStep,
+      managerCurrentStep: this.managerCurrentStep,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       // Additional fields from joins

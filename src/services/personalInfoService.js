@@ -115,6 +115,9 @@ class PersonalInfoService {
 
         await AppraisalService.updateAppraisalSection(appraisalId, 'training_received', trainingRecords);
 
+        // Update current step to performance-planning
+        await AppraisalService.updateCurrentStep(user_id, 'performance-planning');
+
         return personalInfo;
     }
 

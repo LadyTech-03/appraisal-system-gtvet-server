@@ -4,14 +4,14 @@ const { AppError } = require('../middleware/errorHandler');
 
 class AuthService {
   // Login user
-  static async login(email, password) {
-    console.log(email, password);
+  static async login(employee_id, password) {
+    console.log(employee_id, password);
     try {
       // Find user by email
-      const user = await User.findByEmail(email);
+      const user = await User.findByEmployeeId(employee_id);
 
       if (!user) {
-        throw new AppError('Invalid email or password', 401);
+        throw new AppError('Invalid employee ID or password', 401);
       }
 
       // Check if user is active
@@ -23,7 +23,7 @@ class AuthService {
       const isPasswordValid = await user.verifyPassword(password);
 
       if (!isPasswordValid) {
-        throw new AppError('Invalid email or password', 401);
+        throw new AppError('Invalid employee ID or password', 401);
       }
 
 
@@ -34,6 +34,7 @@ class AuthService {
       const token = generateToken({
         id: user.id,
         email: user.email,
+        employee_id: user.employee_id,
         role: user.role
       });
 
@@ -50,10 +51,10 @@ class AuthService {
   static async register(userData) {
     try {
       // Check if user already exists
-      const existingUser = await User.findByEmail(userData.email);
+      const existingUser = await User.findByEmployeeId(userData.employee_id);
 
       if (existingUser) {
-        throw new AppError('User with this email already exists', 400);
+        throw new AppError('User with this employee ID already exists', 400);
       }
 
       // Check if employee ID already exists
@@ -70,6 +71,7 @@ class AuthService {
       const token = generateToken({
         id: user.id,
         email: user.email,
+        employee_id: user.employee_id,
         role: user.role
       });
 

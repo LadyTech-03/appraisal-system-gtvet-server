@@ -32,6 +32,12 @@ router.get('/statistics', requireManager, AppraisalController.getAppraisalStatis
 // Get dashboard overview for current user
 router.get('/overview/me', AppraisalController.getDashboardOverview);
 
+// Get current in-progress appraisal for the logged-in user
+router.get('/current', AppraisalController.getCurrentAppraisal);
+
+// Update manager's current step when reviewing an employee's appraisal
+router.post('/manager-step', requireManager, AppraisalController.updateManagerStep);
+
 // Export appraisals
 router.get('/export', requireManager, AppraisalController.bulkExportAppraisals);
 

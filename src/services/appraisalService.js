@@ -348,6 +348,129 @@ class AppraisalService {
     }
   }
 
+  /**
+   * Get the current in-progress appraisal for a user
+   * Returns the appraisal with its current step, or null if none exists
+   * @param {number} userId - The user ID
+   * @param {object} options - Options object
+   * @param {string} options.role - 'manager' to get manager_current_step, otherwise gets current_step
+   * @param {string} options.employeeId - When role is 'manager', the employee ID whose appraisal to fetch
+   */
+  static async getCurrentAppraisal(userId, options = {}) {
+    try {
+      const { role, employeeId } = options;
+
+      // If manager is reviewing an employee's appraisal
+      if (role === 'manager' && employeeId) {
+        const result = await pool.query(`
+          SELECT id, manager_current_step, status, period_start, period_end, created_at, updated_at
+          FROM appraisals 
+          WHERE employee_id = $1 
+          AND status IN ('in-progress', 'submitted')
+          ORDER BY created_at DESC
+          LIMIT 1
+        `, [employeeId]);
+
+        if (result.rows.length === 0) {
+          return null;
+        }
+
+        const row = result.rows[0];
+        return {
+          id: row.id,
+          currentStep: row.manager_current_step,
+          status: row.status,
+          periodStart: row.period_start,
+          periodEnd: row.period_end,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
+        };
+      }
+
+      // Default: Get employee's own appraisal step
+      const result = await pool.query(`
+        SELECT id, current_step, status, period_start, period_end, created_at, updated_at
+        FROM appraisals 
+        WHERE employee_id = $1 
+        AND status = 'in-progress'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `, [userId]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        currentStep: row.current_step,
+        status: row.status,
+        periodStart: row.period_start,
+        periodEnd: row.period_end,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
+    } catch (error) {
+      console.error('Error getting current appraisal:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update the current step for a user's in-progress appraisal
+   * @param {number} userId - The user ID (employee)
+   * @param {string} nextStep - The next step to set
+   */
+  static async updateCurrentStep(userId, nextStep) {
+    try {
+      const validSteps = ['personal-info', 'performance-planning', 'mid-year-review', 'end-year-review', 'final-sections'];
+      if (!validSteps.includes(nextStep)) {
+        console.error(`Invalid step: ${nextStep}`);
+        return;
+      }
+
+      await pool.query(`
+        UPDATE appraisals 
+        SET current_step = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE employee_id = $2 
+        AND status = 'in-progress'
+      `, [nextStep, userId]);
+
+      console.log(`Updated current_step to '${nextStep}' for user ${userId}`);
+    } catch (error) {
+      console.error('Error updating current step:', error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
+
+  /**
+   * Update the manager's current step when reviewing an employee's appraisal
+   * @param {number} employeeId - The employee whose appraisal is being reviewed
+   * @param {string} nextStep - The next step to set
+   */
+  static async updateManagerCurrentStep(employeeId, nextStep) {
+    try {
+      const validSteps = ['personal-info', 'performance-planning', 'mid-year-review', 'end-year-review', 'final-sections'];
+      if (!validSteps.includes(nextStep)) {
+        console.error(`Invalid manager step: ${nextStep}`);
+        return;
+      }
+
+      await pool.query(`
+        UPDATE appraisals 
+        SET manager_current_step = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE employee_id = $2 
+        AND status IN ('in-progress', 'submitted')
+      `, [nextStep, employeeId]);
+
+      console.log(`Updated manager_current_step to '${nextStep}' for employee ${employeeId}`);
+    } catch (error) {
+      console.error('Error updating manager current step:', error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
+
   // Get team appraisals
   static async getTeamAppraisals(manager_id, options = {}) {
     try {

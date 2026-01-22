@@ -13,6 +13,7 @@ class FinalSectionsService {
             appraiseeComments,
             appraiseeSignatureUrl,
             appraiseeDate,
+            appraiseeAgreementDecision,
             hodComments,
             hodName,
             hodSignatureUrl,
@@ -33,9 +34,9 @@ class FinalSectionsService {
       INSERT INTO final_sections (
         user_id, manager_id, appraisal_id, appraiser_comments, appraiser_signature_url, appraiser_date,
         career_development_comments, assessment_decision,
-        appraisee_comments, appraisee_signature_url, appraisee_date,
+        appraisee_comments, appraisee_signature_url, appraisee_date, appraisee_agreement_decision,
         hod_comments, hod_name, hod_signature_url, hod_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *
     `;
 
@@ -51,6 +52,7 @@ class FinalSectionsService {
             appraiseeComments,
             appraiseeSignatureUrl,
             appraiseeDate,
+            appraiseeAgreementDecision,
             hodComments,
             hodName,
             hodSignatureUrl,
@@ -71,6 +73,7 @@ class FinalSectionsService {
                 appraiserDate,
                 appraiseeSignatureUrl,
                 appraiseeDate,
+                appraiseeAgreementDecision,
                 hodComments,
                 hodName,
                 hodSignatureUrl,
@@ -91,6 +94,7 @@ class FinalSectionsService {
             appraiseeComments,
             appraiseeSignatureUrl,
             appraiseeDate,
+            appraiseeAgreementDecision,
             hodComments,
             hodName,
             hodSignatureUrl,
@@ -147,6 +151,12 @@ class FinalSectionsService {
         if (appraiseeDate !== undefined) {
             updates.push(`appraisee_date = $${paramCount}`);
             values.push(appraiseeDate);
+            paramCount++;
+        }
+
+        if (appraiseeAgreementDecision !== undefined) {
+            updates.push(`appraisee_agreement_decision = $${paramCount}`);
+            values.push(appraiseeAgreementDecision);
             paramCount++;
         }
 
@@ -219,11 +229,8 @@ class FinalSectionsService {
         const query = 'SELECT * FROM final_sections WHERE user_id = $1 ORDER BY created_at DESC';
         const result = await pool.query(query, [user_id]);
 
-        if (result.rows.length === 0) {
-            throw new NotFoundError('Record not found');
-        }
         console.log(result.rows, 'this is the final sections')
-        return result.rows;
+        return result.rows; // Return empty array if no records found
     }
 
     static async deleteFinalSections(id) {

@@ -3,13 +3,12 @@ const { catchAsync } = require('../middleware/errorHandler');
 
 class FinalSectionsController {
     static createFinalSections = catchAsync(async (req, res) => {
-        const user_id = req.user.id;
+        // Use user_id from request body if provided (for review mode), otherwise use logged-in user's id
+        const user_id = req.body.userId || req.user.id;
         const data = req.body;
 
 
-        console.log(user_id, data, 'this is the final user id and data')
         const result = await FinalSectionsService.createFinalSections(user_id, data);
-        console.log(result, 'this is the final sections')
 
         res.status(201).json({
             success: true,
@@ -26,7 +25,7 @@ class FinalSectionsController {
 
         res.status(200).json({
             success: true,
-            message: 'Final sections updated successfully',
+            message: 'Sections updated successfully',
             data: result
         });
     });
